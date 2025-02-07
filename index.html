@@ -348,11 +348,22 @@
         // Supprimer TOUS les autres gestionnaires d'événements tactiles et les remplacer par ceci :
         let isProcessing = false;
 
+        // Ajouter cette fonction pour la vibration
+        function vibrate() {
+            if (navigator.vibrate) {
+                navigator.vibrate(40); // vibration courte de 40ms
+            }
+        }
+
         // Unique gestionnaire d'événements pour mobile et desktop
         document.querySelector('.buttons').addEventListener('pointerdown', function(event) {
             if (event.target.tagName === 'BUTTON' && !isProcessing) {
                 event.preventDefault();
                 isProcessing = true;
+                
+                // Ajouter la vibration
+                vibrate();
+                
                 handleButtonClick(event.target);
                 
                 // Réinitialiser le drapeau après un court délai
