@@ -257,7 +257,6 @@
     <script>
         let displayValue = '0';
         const display = document.getElementById('display');
-        let activeButton = null; // Pour suivre le bouton actuellement pressé
         
         // Ajouter les sons
         const inClickSound = new Audio('inclick.mp3');
@@ -362,33 +361,27 @@
 
         // Unique gestionnaire d'événements pour mobile et desktop
         document.querySelector('.buttons').addEventListener('pointerdown', function(event) {
-            if (event.target.tagName === 'BUTTON' && !isProcessing) {
+            if (event.target.tagName === 'BUTTON') {
                 event.preventDefault();
-                isProcessing = true;
-                activeButton = event.target;
-                
-                // Jouer inclick quand le bouton commence à s'enfoncer
+                // Jouer inclick immédiatement quand le bouton s'enfonce
                 inClickSound.currentTime = 0;
                 inClickSound.play();
                 
                 // Ajouter la vibration
-                vibrate();
+                if (navigator.vibrate) {
+                    navigator.vibrate(40);
+                }
             }
         }, {passive: false});
 
-        // Ajouter ce nouveau gestionnaire pour pointerup
         document.querySelector('.buttons').addEventListener('pointerup', function(event) {
-            if (event.target.tagName === 'BUTTON' && activeButton === event.target) {
-                // Jouer outclick quand le bouton revient à sa position initiale
+            if (event.target.tagName === 'BUTTON') {
+                // Jouer outclick immédiatement quand le bouton est relâché
                 outClickSound.currentTime = 0;
                 outClickSound.play();
                 
+                // Traiter l'action du bouton
                 handleButtonClick(event.target);
-                activeButton = null;
-                
-                setTimeout(() => {
-                    isProcessing = false;
-                }, 200);
             }
         });
 
