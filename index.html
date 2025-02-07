@@ -367,6 +367,21 @@
         });
 
         // Supprimer tous les autres gestionnaires d'événements et ne garder que ceux-ci
+        function handleTouchStart(event) {
+    event.preventDefault();
+    const button = event.touches[0].target;
+
+    if (button.tagName === 'BUTTON' && !isPressed) {
+        isPressed = true;
+        inClickSound.currentTime = 0;
+        inClickSound.play().catch(() => {});
+
+        if (navigator.vibrate) {
+            navigator.vibrate(40);
+        }
+    }
+}
+
         function handleTouchEnd(event) {
     event.preventDefault();
     const button = event.target;
@@ -375,32 +390,16 @@
         isPressed = false;
         outClickSound.currentTime = 0;
         outClickSound.play().catch(() => {});
-        
-        // Check if the touch event is still ongoing
-        if (event.changedTouches && event.changedTouches.length > 0) {
-            handleButtonClick(button);
-        }
+        handleButtonClick(button);
     }
 }
 
-        function handleTouchEnd(event) {
-            event.preventDefault();
-            const button = event.target;
-            
-            if (button.tagName === 'BUTTON' && isPressed) {
-                isPressed = false;
-                outClickSound.currentTime = 0;
-                outClickSound.play().catch(() => {});
-                handleButtonClick(button);
-            }
-        }
-
-        // Use only touch events on mobile
+// Utilisez uniquement les événements tactiles sur mobile
 if ('ontouchstart' in window) {
     buttons.addEventListener('touchstart', handleTouchStart, { passive: false });
     buttons.addEventListener('touchend', handleTouchEnd, { passive: false });
 } else {
-    // On desktop, use mouse events
+    // Sur desktop, utilisez les événements de la souris
     buttons.addEventListener('mousedown', (event) => {
         const button = event.target;
         if (button.tagName === 'BUTTON') {
@@ -408,7 +407,7 @@ if ('ontouchstart' in window) {
             inClickSound.play().catch(() => {});
         }
     });
-    
+
     buttons.addEventListener('mouseup', (event) => {
         const button = event.target;
         if (button.tagName === 'BUTTON') {
