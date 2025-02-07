@@ -259,76 +259,26 @@
     <script>
         let displayValue = '0';
         const display = document.getElementById('display');
-        
-        // Créer des pools de sons
-        class SoundPool {
-            constructor(soundUrl, poolSize = 4) {
-                this.sounds = Array.from({ length: poolSize }, () => {
-                    const audio = new Audio(soundUrl);
-                    audio.volume = 1;
-                    return audio;
-                });
-                this.currentIndex = 0;
-            }
-
-            play() {
-                const sound = this.sounds[this.currentIndex];
-                sound.currentTime = 0;
-                sound.play().catch(() => {});
-                this.currentIndex = (this.currentIndex + 1) % this.sounds.length;
-            }
-        }
-
-        // Créer les pools de sons
-        const inClickSounds = new SoundPool('inclick.mp3', 4);
-        const outClickSounds = new SoundPool('outclick.mp3', 4);
-
-        // Précharger tous les sons au démarrage
-        window.addEventListener('load', () => {
-            [...inClickSounds.sounds, ...outClickSounds.sounds].forEach(sound => {
-                sound.play().then(() => {
-                    sound.pause();
-                    sound.currentTime = 0;
-                }).catch(() => {});
-            });
-        });
-
-        // Gestionnaires d'événements simplifiés
+        const inClickSound = document.getElementById('inclick');
+        const outClickSound = document.getElementById('outclick');
         const buttons = document.querySelector('.buttons');
+        let isPressed = false;
 
-        if ('ontouchstart' in window) {
-            buttons.addEventListener('touchstart', (event) => {
-                const button = event.touches[0].target;
-                if (button.tagName === 'BUTTON') {
-                    event.preventDefault();
-                    inClickSounds.play();
-                    if (navigator.vibrate) navigator.vibrate(40);
-                }
-            }, { passive: false });
+        // Ajouter le préchargement des sons
+        window.addEventListener('load', () => {
+            // Précharger inclick
+            inClickSound.play().then(() => {
+                inClickSound.pause();
+                inClickSound.currentTime = 0;
+            }).catch(() => {});
 
-            buttons.addEventListener('touchend', (event) => {
-                const button = event.changedTouches[0].target;
-                if (button.tagName === 'BUTTON') {
-                    event.preventDefault();
-                    outClickSounds.play();
-                    handleButtonClick(button);
-                }
-            }, { passive: false });
-        } else {
-            buttons.addEventListener('mousedown', (event) => {
-                if (event.target.tagName === 'BUTTON') {
-                    inClickSounds.play();
-                }
-            });
-
-            buttons.addEventListener('mouseup', (event) => {
-                if (event.target.tagName === 'BUTTON') {
-                    outClickSounds.play();
-                    handleButtonClick(event.target);
-                }
-            });
-        }
-
+            // Précharger outclick
+            outClickSound.play().then(() => {
+                outClickSound.pause();
+                outClickSound.currentTime = 0;
+            }).catch(() => {});
+        });
+        
         function updateDisplay(value) {
             const oldValue = display.textContent;
             display.innerHTML = '';
@@ -415,6 +365,59 @@
                     break;
             }
         });
+
+        // Supprimer tous les autres gestionnaires d'événements et ne garder que ceux-ci
+        function handleTouchEnd(event) {
+    event.preventDefault();
+    const button = event.target;
+
+    if (button.tagName === 'BUTTON' && isPressed) {
+        isPressed = false;
+        outClickSound.currentTime = 0;
+        outClickSound.play().catch(() => {});
+        
+        // Check if the touch event is still ongoing
+        if (event.changedTouches && event.changedTouches.length > 0) {
+            handleButtonClick(button);
+        }
+    }
+}
+
+        function handleTouchEnd(event) {
+            event.preventDefault();
+            const button = event.target;
+            
+            if (button.tagName === 'BUTTON' && isPressed) {
+                isPressed = false;
+                outClickSound.currentTime = 0;
+                outClickSound.play().catch(() => {});
+                handleButtonClick(button);
+            }
+        }
+
+        // Use only touch events on mobile
+if ('ontouchstart' in window) {
+    buttons.addEventListener('touchstart', handleTouchStart, { passive: false });
+    buttons.addEventListener('touchend', handleTouchEnd, { passive: false });
+} else {
+    // On desktop, use mouse events
+    buttons.addEventListener('mousedown', (event) => {
+        const button = event.target;
+        if (button.tagName === 'BUTTON') {
+            inClickSound.currentTime = 0;
+            inClickSound.play().catch(() => {});
+        }
+    });
+    
+    buttons.addEventListener('mouseup', (event) => {
+        const button = event.target;
+        if (button.tagName === 'BUTTON') {
+            outClickSound.currentTime = 0;
+            outClickSound.play().catch(() => {});
+            handleButtonClick(button);
+        }
+    });
+}
 
         function handleButtonClick(button) {
             const action = button.dataset.action;
