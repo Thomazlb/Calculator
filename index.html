@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calculatrice Végétale</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #5c785c; /* Fond plus clair et plus doux */
+            font-family: 'Arial', sans-serif;
+        }
+
+        .calculator {
+            background: #243524;
+            width: 100%;
+            max-width: 340px;
+            margin: 10px;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 3/4;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calculator::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 60px;
+            height: 60px;
+            background: #4a764a;
+            border-radius: 50%;
+            opacity: 0.2;
+        }
+
+        .display {
+            background: #2d432d; /* Même couleur que les boutons */
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: right;
+            font-size: min(2.2em, 8vw);
+            color: #e0ffe0;
+            position: relative;
+            overflow: hidden;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            flex: 1;
+        }
+
+        button {
+            padding: 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.4em;
+            cursor: pointer;
+            background: linear-gradient(to bottom, #324d32, #2d432d);
+            color: #ffffff;
+            transition: all 0.08s ease; /* Transition plus rapide pour un feedback immédiat */
+            box-shadow: 
+                0 6px 0 #1a291a,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+            transform: translateY(0);
+            height: 60px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button:hover {
+            background: linear-gradient(to bottom, #385838, #324d32);
+            transform: translateY(0);
+            box-shadow: 
+                0 6px 0 #1a291a,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        button:active {
+            transform: translateY(6px);
+            background: linear-gradient(to bottom, #2d432d, #263926);
+            box-shadow: 
+                0 0 0 #1a291a,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        button.operator {
+            background: linear-gradient(to bottom, #4f7f4f, #4a764a);
+            box-shadow: 
+                0 6px 0 #2d432d,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        button.operator:hover {
+            background: #618961;
+        }
+
+        button.operator:active {
+            transform: translateY(6px);
+            background: linear-gradient(to bottom, #456e45, #3d5d3d);
+            box-shadow: 
+                0 0 0 #2d432d,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        button.equals {
+            background: linear-gradient(to bottom, #5c8c5c, #568656);
+            color: white;
+            grid-column: span 2;
+            box-shadow: 
+                0 6px 0 #2d432d,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        button.equals:hover {
+            background: #72a772;
+        }
+
+        button.equals:active {
+            transform: translateY(6px);
+            background: linear-gradient(to bottom, #4f7f4f, #456e45);
+            box-shadow: 
+                0 0 0 #2d432d,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes numberPop {
+            0% {
+                opacity: 0;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .display span.new-digit {
+            display: inline-block;
+            animation: numberPop 0.2s ease-out;
+        }
+
+        @media (max-width: 480px) {
+            .calculator {
+                border-radius: 15px;
+                padding: 20px;
+            }
+
+            button {
+                border-radius: 8px;
+                height: 50px;
+                font-size: 1.2em;
+            }
+
+            .display {
+                margin-bottom: 20px;
+                height: 70px;
+            }
+        }
+
+        @media (hover: none) {
+            button:hover {
+                background: #2d432d;
+                transform: translateY(0);
+                box-shadow: 
+                    0 6px 0 #1a291a,
+                    0 7px 8px rgba(0, 0, 0, 0.4),
+                    inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                    inset 0 2px 2px rgba(255, 255, 255, 0.2);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button onclick="clearDisplay()">C</button>
+            <button onclick="appendOperator('/')">/</button>
+            <button onclick="appendOperator('*')">×</button>
+            <button onclick="deleteLastChar()">←</button>
+            
+            <button onclick="appendNumber('7')">7</button>
+            <button onclick="appendNumber('8')">8</button>
+            <button onclick="appendNumber('9')">9</button>
+            <button onclick="appendOperator('-')" class="operator">-</button>
+            
+            <button onclick="appendNumber('4')">4</button>
+            <button onclick="appendNumber('5')">5</button>
+            <button onclick="appendNumber('6')">6</button>
+            <button onclick="appendOperator('+')" class="operator">+</button>
+            
+            <button onclick="appendNumber('1')">1</button>
+            <button onclick="appendNumber('2')">2</button>
+            <button onclick="appendNumber('3')">3</button>
+            
+            <button onclick="appendNumber('0')">0</button>
+            <button onclick="appendNumber('.')">.</button>
+            <button onclick="calculate()" class="equals">=</button>
+        </div>
+    </div>
+
+    <script>
+        let displayValue = '0';
+        const display = document.getElementById('display');
+
+        function updateDisplay(value) {
+            const oldValue = display.textContent;
+            display.innerHTML = '';
+            value.split('').forEach((digit, index) => {
+                const span = document.createElement('span');
+                span.textContent = digit;
+                if (oldValue[index] !== digit) {
+                    span.className = 'new-digit';
+                }
+                display.appendChild(span);
+            });
+        }
+
+        function appendNumber(num) {
+            if (displayValue === '0' && num !== '.') {
+                displayValue = num;
+            } else {
+                displayValue += num;
+            }
+            updateDisplay(displayValue);
+        }
+
+        function appendOperator(operator) {
+            displayValue += operator;
+            updateDisplay(displayValue);
+        }
+
+        function clearDisplay() {
+            displayValue = '0';
+            updateDisplay(displayValue);
+        }
+
+        function deleteLastChar() {
+            displayValue = displayValue.slice(0, -1) || '0';
+            updateDisplay(displayValue);
+        }
+
+        function calculate() {
+            try {
+                displayValue = eval(displayValue).toString();
+                updateDisplay(displayValue);
+            } catch (error) {
+                displayValue = 'Error';
+                updateDisplay(displayValue);
+                setTimeout(clearDisplay, 1500);
+            }
+        }
+
+        // Ajout de la gestion du clavier
+        document.addEventListener('keydown', function(event) {
+            // Empêcher les actions par défaut du navigateur
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
+            
+            // Chiffres (pavé numérique et ligne supérieure)
+            if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
+                let num = event.key;
+                // Conversion des codes du pavé numérique
+                if (event.keyCode >= 96 && event.keyCode <= 105) {
+                    num = (event.keyCode - 96).toString();
+                }
+                appendNumber(num);
+            }
+            
+            // Opérateurs
+            switch (event.key) {
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                    appendOperator(event.key);
+                    break;
+                case 'Enter':
+                case '=':
+                    calculate();
+                    break;
+                case 'Backspace':
+                    deleteLastChar();
+                    break;
+                case 'Escape':
+                case 'Delete':
+                    clearDisplay();
+                    break;
+            }
+        });
+
+        // Désactiver le zoom sur double-tap pour iOS
+        document.addEventListener('touchend', function(event) {
+            event.preventDefault();
+            // Permettre le clic si c'est un bouton
+            if (event.target.tagName === 'BUTTON') {
+                event.target.click();
+            }
+        }, false);
+    </script>
+</body>
+</html>
