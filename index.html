@@ -469,6 +469,17 @@
 
             let buttonValue = null;
 
+            // Ajouter la gestion de la touche 'c'
+            if (event.key.toLowerCase() === 'c') {
+                simulateButtonPress('clear');
+                clearDisplay();
+                if (!isMobile) {
+                    inClickSound.currentTime = 0;
+                    inClickSound.play().catch(() => {});
+                }
+                return;
+            }
+
             // Gestion des touches numériques
             if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
                 buttonValue = event.keyCode >= 96 && event.keyCode <= 105 ? 
@@ -523,6 +534,16 @@
         // Ajouter le gestionnaire keyup
         document.addEventListener('keyup', function(event) {
             let buttonValue = null;
+
+            // Ajouter la gestion du relâchement de la touche 'c'
+            if (event.key.toLowerCase() === 'c') {
+                simulateButtonRelease('clear');
+                if (!isMobile) {s
+                    outClickSound.currentTime = 0;
+                    outClickSound.play().catch(() => {});
+                }
+                return;
+            }
 
             // Déterminer quelle touche a été relâchée
             if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
