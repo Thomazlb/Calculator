@@ -31,6 +31,8 @@
             aspect-ratio: 3/4;
             display: flex;
             flex-direction: column;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0 auto;
         }
 
         .calculator::before {
@@ -223,12 +225,110 @@
                 background: linear-gradient(to bottom, #5c8c5c, #568656) !important;
             }
         }
+
+        /* Modifier les styles du panneau de thèmes */
+        .theme-panel {
+            position: fixed;
+            left: 50%;
+            bottom: 0; /* Position initiale au bas */
+            transform: translate(-50%, 100%); /* Caché sous la page */
+            background: inherit;
+            padding: 20px;
+            border-radius: 20px;
+            display: flex;
+            gap: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            opacity: 0;
+        }
+
+        .theme-panel.active {
+            transform: translate(-50%, -20px); /* Monte juste un peu pour l'espacement */
+            opacity: 1;
+        }
+
+        .calculator {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0 auto;
+        }
+
+        .calculator.panel-active {
+            transform: translateY(-40px); /* Monte vers le haut */
+        }
+
+        .theme-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.08s ease;
+        }
+
+        /* Couleurs fixes pour chaque bouton de thème */
+        #theme-green {
+            background: linear-gradient(to bottom, #4CAF50, #45a049);
+            box-shadow: 
+                0 6px 0 #2d432d,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        #theme-pink {
+            background: linear-gradient(to bottom, #ff69b4, #ff1493);
+            box-shadow: 
+                0 6px 0 #cc1173,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        #theme-blue {
+            background: linear-gradient(to bottom, #4169e1, #0000cd);
+            box-shadow: 
+                0 6px 0 #00008b,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        #theme-red {
+            background: linear-gradient(to bottom, #ff4444, #cc0000);
+            box-shadow: 
+                0 6px 0 #990000,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Effet d'enfoncement pour le bouton actif */
+        .theme-btn.active {
+            transform: translateY(6px);
+            box-shadow: 
+                0 0 0 #000000,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+        }
+
+        button.settings {
+            background: linear-gradient(to bottom, #666666, #555555);
+            color: white;
+        }
     </style>
 </head>
 <body>
     <audio id="inclick" preload="auto" src="inclick.mp3"></audio>
     <audio id="outclick" preload="auto" src="outclick.mp3"></audio>
     <div class="calculator">
+        <div class="theme-panel" id="theme-panel">
+            <button class="theme-btn active" id="theme-green" data-theme="green"></button>
+            <button class="theme-btn" id="theme-pink" data-theme="pink"></button>
+            <button class="theme-btn" id="theme-blue" data-theme="blue"></button>
+            <button class="theme-btn" id="theme-red" data-theme="red"></button>
+        </div>
         <div class="display" id="display">0</div>
         <div class="buttons">
             <button data-action="clear">C</button>
@@ -253,6 +353,7 @@
             <button data-action="number" data-value="0">0</button>
             <button data-action="number" data-value=".">.</button>
             <button data-action="calculate" class="equals">=</button>
+            <button data-action="settings" class="settings">⚙️</button>
         </div>
     </div>
 
@@ -607,6 +708,130 @@
                     break;
             }
         }
+
+        // Définition des thèmes
+        const themes = {
+            green: {
+                background: '#e8f5e8', // Vert très clair
+                calculator: '#2d432d', // Vert foncé
+                button: '#324d32', // Vert moyen
+                buttonGradient: 'linear-gradient(to bottom, #3a5a3a, #324d32)',
+                displayBg: '#243524',
+                buttonShadow: '#1a291a',
+                operator: 'linear-gradient(to bottom, #4f7f4f, #3d633d)', // Vert plus clair
+                equals: 'linear-gradient(to bottom, #5c8c5c, #4a764a)'
+            },
+            pink: {
+                background: '#fff0f5', // Rose très clair
+                calculator: '#db5c98', // Rose foncé
+                button: '#e75ea0', // Rose moyen
+                buttonGradient: 'linear-gradient(to bottom, #ff69b4, #e75ea0)',
+                displayBg: '#d64d8c',
+                buttonShadow: '#b33d73',
+                operator: 'linear-gradient(to bottom, #ff8dc2, #ff69b4)', // Rose plus clair
+                equals: 'linear-gradient(to bottom, #ff9bcc, #ff69b4)'
+            },
+            blue: {
+                background: '#f0f5ff', // Bleu très clair
+                calculator: '#2952cc', // Bleu foncé
+                button: '#3163e0', // Bleu moyen
+                buttonGradient: 'linear-gradient(to bottom, #4169e1, #3163e0)',
+                displayBg: '#234cc2',
+                buttonShadow: '#1a3995',
+                operator: 'linear-gradient(to bottom, #6495ed, #4169e1)', // Bleu plus clair
+                equals: 'linear-gradient(to bottom, #73a0ee, #4169e1)'
+            },
+            red: {
+                background: '#fff0f0', // Rouge très clair
+                calculator: '#cc2929', // Rouge foncé
+                button: '#e03131', // Rouge moyen
+                buttonGradient: 'linear-gradient(to bottom, #ff4444, #e03131)',
+                displayBg: '#c22323',
+                buttonShadow: '#951a1a',
+                operator: 'linear-gradient(to bottom, #ff6b6b, #ff4444)', // Rouge plus clair
+                equals: 'linear-gradient(to bottom, #ff7777, #ff4444)'
+            }
+        };
+
+        // Modifier le gestionnaire du bouton paramètres
+        document.querySelector('[data-action="settings"]').addEventListener('click', function() {
+            const panel = document.getElementById('theme-panel');
+            const calculator = document.querySelector('.calculator');
+            
+            panel.classList.toggle('active');
+            calculator.classList.toggle('panel-active');
+            this.classList.toggle('active');
+            
+            if (!isMobile) {
+                inClickSound.currentTime = 0;
+                inClickSound.play().catch(() => {});
+            }
+        });
+
+        // Modifier le gestionnaire des boutons de thème
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const theme = themes[this.dataset.theme];
+                
+                // Mettre à jour les boutons de thème
+                document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Appliquer le thème
+                document.body.style.background = theme.background;
+                document.querySelector('.calculator').style.background = theme.calculator;
+                document.getElementById('theme-panel').style.background = theme.calculator;
+                
+                // Appliquer aux boutons normaux (exclure les boutons de thème)
+                document.querySelectorAll('button:not(.operator):not(.equals):not(.settings):not(.theme-btn)').forEach(btn => {
+                    btn.style.background = theme.buttonGradient;
+                    btn.style.boxShadow = `0 6px 0 ${theme.buttonShadow},
+                        0 7px 8px rgba(0, 0, 0, 0.4),
+                        inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                        inset 0 2px 2px rgba(255, 255, 255, 0.2)`;
+                });
+
+                // Appliquer aux boutons spéciaux
+                document.querySelectorAll('button.operator').forEach(btn => {
+                    btn.style.background = theme.operator;
+                    btn.style.boxShadow = `0 6px 0 ${theme.buttonShadow},
+                        0 7px 8px rgba(0, 0, 0, 0.4),
+                        inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                        inset 0 2px 2px rgba(255, 255, 255, 0.2)`;
+                });
+
+                document.querySelector('button.equals').style.background = theme.equals;
+                document.querySelector('button.equals').style.boxShadow = `0 6px 0 ${theme.buttonShadow},
+                    0 7px 8px rgba(0, 0, 0, 0.4),
+                    inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                    inset 0 2px 2px rgba(255, 255, 255, 0.2)`;
+                
+                document.querySelector('.display').style.background = theme.displayBg;
+                document.querySelector('.display').style.color = '#ffffff';
+
+                // Fermer le panneau avec délai pour voir l'animation du bouton
+                setTimeout(() => {
+                    document.getElementById('theme-panel').classList.remove('active');
+                    document.querySelector('.calculator').classList.remove('panel-active');
+                    document.querySelector('[data-action="settings"]').classList.remove('active');
+                }, 200);
+            });
+        });
+
+        // Ajouter la gestion de la touche 'p'
+        document.addEventListener('keydown', function(event) {
+            if (event.key.toLowerCase() === 'p') {
+                document.querySelector('[data-action="settings"]').click();
+            }
+        });
+
+        // Restaurer le thème au chargement
+        window.addEventListener('load', () => {
+            const savedTheme = localStorage.getItem('calculatorTheme');
+            if (savedTheme) {
+                document.querySelector(`#theme-${savedTheme}`).click();
+            }
+        });
     </script>
 </body>
 </html>
