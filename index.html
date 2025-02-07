@@ -13,6 +13,9 @@
             margin: 0;
             background: #5c785c; /* Fond plus clair et plus doux */
             font-family: 'Arial', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .calculator {
@@ -57,6 +60,8 @@
             align-items: center;
             justify-content: flex-end;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1);
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         .buttons {
@@ -198,6 +203,27 @@
                     inset 0 -2px 2px rgba(0, 0, 0, 0.3),
                     inset 0 2px 2px rgba(255, 255, 255, 0.2);
             }
+
+            button:active {
+                transform: translateY(6px) !important;
+                background: linear-gradient(to bottom, #2d432d, #263926) !important;
+                box-shadow: 
+                    0 0 0 #1a291a,
+                    0 0 0 rgba(0, 0, 0, 0.4),
+                    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+                transition: all 0.1s ease;
+            }
+
+            button.operator:active {
+                transform: translateY(6px) !important;
+                background: linear-gradient(to bottom, #456e45, #3d5d3d) !important;
+            }
+
+            button.equals:active {
+                transform: translateY(6px) !important;
+                background: linear-gradient(to bottom, #4f7f4f, #456e45) !important;
+            }
         }
     </style>
 </head>
@@ -329,6 +355,20 @@
                 event.target.click();
             }
         }, false);
+
+        // Modifier la gestion des événements tactiles
+        document.addEventListener('touchstart', function(event) {
+            if (event.target.tagName === 'BUTTON') {
+                event.preventDefault();
+            }
+        }, {passive: false});
+
+        document.addEventListener('touchend', function(event) {
+            if (event.target.tagName === 'BUTTON') {
+                event.preventDefault();
+                event.target.click();
+            }
+        }, {passive: false});
     </script>
 </body>
 </html>
