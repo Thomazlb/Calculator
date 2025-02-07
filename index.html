@@ -257,7 +257,11 @@
     <script>
         let displayValue = '0';
         const display = document.getElementById('display');
-
+        
+        // Ajouter les sons
+        const inClickSound = new Audio('inclick.mp3');
+        const outClickSound = new Audio('outclick.mp3');
+        
         function updateDisplay(value) {
             const oldValue = display.textContent;
             display.innerHTML = '';
@@ -348,31 +352,34 @@
         // Supprimer TOUS les autres gestionnaires d'événements tactiles et les remplacer par ceci :
         let isProcessing = false;
 
-        // Modifier la fonction vibrate pour qu'elle soit plus fiable
+        // Ajouter cette fonction pour la vibration
         function vibrate() {
-            try {
-                if ('vibrate' in navigator) {
-                    window.navigator.vibrate(50); // Augmentation de la durée à 50ms pour une meilleure perception
-                }
-            } catch (e) {
-                console.log('Vibration non supportée');
+            if (navigator.vibrate) {
+                navigator.vibrate(40); // vibration courte de 40ms
             }
         }
 
-        // Modifier le gestionnaire d'événements pour inclure un feedback haptique plus fort
+        // Unique gestionnaire d'événements pour mobile et desktop
         document.querySelector('.buttons').addEventListener('pointerdown', function(event) {
             if (event.target.tagName === 'BUTTON' && !isProcessing) {
                 event.preventDefault();
                 isProcessing = true;
                 
-                // Tentative de vibration plus forte avec un pattern
-                try {
-                    if ('vibrate' in navigator) {
-                        window.navigator.vibrate([30, 10, 30]); // Pattern: vibrer-pause-vibrer
-                    }
-                } catch (e) {
-                    console.log('Vibration non supportée');
-                }
+                // Jouer le son inclick
+                inClickSound.currentTime = 0;
+                inClickSound.play();
+                
+                // Ajouter la vibration
+                vibrate();
+            }
+        }, {passive: false});
+
+        // Ajouter ce nouveau gestionnaire pour pointerup
+        document.querySelector('.buttons').addEventListener('pointerup', function(event) {
+            if (event.target.tagName === 'BUTTON') {
+                // Jouer le son outclick
+                outClickSound.currentTime = 0;
+                outClickSound.play();
                 
                 handleButtonClick(event.target);
                 
@@ -380,7 +387,7 @@
                     isProcessing = false;
                 }, 200);
             }
-        }, {passive: false});
+        });
 
         // Supprimer tous les autres gestionnaires d'événements touchstart/touchend/click
         // Ne garder que la gestion du clavier physique
