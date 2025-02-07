@@ -430,6 +430,54 @@
                     break;
             }
         }
+
+        // Remplacer les gestionnaires d'événements existants par ceux-ci
+        const buttons = document.querySelector('.buttons');
+        let isPressed = false;
+
+        // Fonction pour jouer les sons de manière fiable
+        function playSound(sound) {
+            sound.currentTime = 0;
+            let playPromise = sound.play();
+            if (playPromise) {
+                playPromise.catch(error => {
+                    console.log("Erreur de lecture audio:", error);
+                });
+            }
+        }
+
+        // Gestion tactile et souris unifiée
+        buttons.addEventListener('touchstart', handleStart, { passive: false });
+        buttons.addEventListener('mousedown', handleStart, { passive: false });
+        buttons.addEventListener('touchend', handleEnd);
+        buttons.addEventListener('mouseup', handleEnd);
+
+        function handleStart(event) {
+            event.preventDefault();
+            const button = event.target;
+            
+            if (button.tagName === 'BUTTON' && !isPressed) {
+                isPressed = true;
+                playSound(inClickSound);
+                
+                // Vibration
+                if (navigator.vibrate) {
+                    navigator.vibrate(40);
+                }
+            }
+        }
+
+        function handleEnd(event) {
+            const button = event.target;
+            
+            if (button.tagName === 'BUTTON' && isPressed) {
+                isPressed = false;
+                playSound(outClickSound);
+                handleButtonClick(button);
+            }
+        }
+
+        // Supprimer les autres gestionnaires d'événements (pointercancel, pointerleave, etc.)
     </script>
 </body>
 </html>
