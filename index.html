@@ -345,28 +345,37 @@
             }
         });
 
-        // Désactiver le zoom sur double-tap pour iOS
-        document.addEventListener('touchend', function(event) {
-            event.preventDefault();
-            // Permettre le clic si c'est un bouton
-            if (event.target.tagName === 'BUTTON') {
-                event.target.click();
-            }
-        }, false);
+        // Supprimer tous les anciens gestionnaires d'événements tactiles
+        // et les remplacer par cette version simplifiée
+        let lastTapTime = 0;
 
-        // Modifier la gestion des événements tactiles
-        document.addEventListener('touchstart', function(event) {
+        document.querySelector('.buttons').addEventListener('touchend', function(event) {
+            if (event.target.tagName === 'BUTTON') {
+                event.preventDefault();
+                
+                // Éviter les doubles taps accidentels
+                const currentTime = Date.now();
+                if (currentTime - lastTapTime > 300) {
+                    lastTapTime = currentTime;
+                    handleButtonClick(event.target);
+                }
+            }
+        }, {passive: false});
+
+        // Empêcher le comportement par défaut sur touchstart
+        document.querySelector('.buttons').addEventListener('touchstart', function(event) {
             if (event.target.tagName === 'BUTTON') {
                 event.preventDefault();
             }
         }, {passive: false});
 
-        document.addEventListener('touchend', function(event) {
-            if (event.target.tagName === 'BUTTON') {
-                event.preventDefault();
-                event.target.click();
+        // Garder uniquement ce gestionnaire pour les clics desktop
+        document.querySelector('.buttons').addEventListener('click', function(event) {
+            // Ignorer les clics générés par les événements touch
+            if (event.target.tagName === 'BUTTON' && event.pointerType !== 'touch') {
+                handleButtonClick(event.target);
             }
-        }, {passive: false});
+        });
 
         // Nouvelle gestion unifiée des clics
         function handleButtonClick(button) {
@@ -391,37 +400,6 @@
                     break;
             }
         }
-
-        // Gestion des événements click (pour desktop)
-        document.querySelector('.buttons').addEventListener('click', function(event) {
-            if (event.target.tagName === 'BUTTON') {
-                handleButtonClick(event.target);
-            }
-        });
-
-        // Remplacer les gestionnaires touch existants par :
-        let touchStartTime;
-        let isProcessing = false;
-
-        document.addEventListener('touchstart', function(event) {
-            if (event.target.tagName === 'BUTTON') {
-                event.preventDefault();
-                touchStartTime = Date.now();
-            }
-        }, {passive: false});
-
-        document.addEventListener('touchend', function(event) {
-            if (event.target.tagName === 'BUTTON' && !isProcessing) {
-                event.preventDefault();
-                
-                // Vérifier si c'est un tap rapide (moins de 300ms)
-                if (Date.now() - touchStartTime < 300) {
-                    isProcessing = true;
-                    handleButtonClick(event.target);
-                    setTimeout(() => { isProcessing = false; }, 100);
-                }
-            }
-        }, {passive: false});
     </script>
 </body>
 </html>
