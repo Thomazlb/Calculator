@@ -262,23 +262,46 @@
         const inClickSound = document.getElementById('inclick');
         const outClickSound = document.getElementById('outclick');
         const buttons = document.querySelector('.buttons');
-        let isPressed = false;
+        const isMobile = 'ontouchstart' in window;
 
-        // Ajouter le préchargement des sons
-        window.addEventListener('load', () => {
-            // Précharger inclick
-            inClickSound.play().then(() => {
-                inClickSound.pause();
-                inClickSound.currentTime = 0;
-            }).catch(() => {});
+        // Gestionnaire d'événements unifié
+        if (isMobile) {
+            // Version mobile (tactile uniquement)
+            buttons.addEventListener('touchstart', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    event.preventDefault();
+                    if (navigator.vibrate) navigator.vibrate(40);
+                }
+            }, { passive: false });
 
-            // Précharger outclick
-            outClickSound.play().then(() => {
-                outClickSound.pause();
-                outClickSound.currentTime = 0;
-            }).catch(() => {});
-        });
-        
+            buttons.addEventListener('touchend', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    event.preventDefault();
+                    handleButtonClick(button);
+                }
+            }, { passive: false });
+        } else {
+            // Version desktop (souris uniquement)
+            buttons.addEventListener('mousedown', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    inClickSound.currentTime = 0;
+                    inClickSound.play().catch(() => {});
+                }
+            });
+
+            buttons.addEventListener('mouseup', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    outClickSound.currentTime = 0;
+                    outClickSound.play().catch(() => {});
+                    handleButtonClick(button);
+                }
+            });
+        }
+
         function updateDisplay(value) {
             const oldValue = display.textContent;
             display.innerHTML = '';
@@ -327,14 +350,20 @@
             }
         }
 
-        // Ajout de la gestion du clavier
+        // Remplacer l'ancien gestionnaire de clavier par celui-ci
         document.addEventListener('keydown', function(event) {
             // Empêcher les actions par défaut du navigateur
             if (event.key === 'Enter') {
                 event.preventDefault();
             }
+
+            // Jouer le son d'appui sur les touches (seulement sur desktop)
+            if (!isMobile) {
+                inClickSound.currentTime = 0;
+                inClickSound.play().catch(() => {});
+            }
             
-            // Chiffres (pavé numérique et ligne supérieure)
+            // Gestion des touches numériques (incluant le pavé numérique)
             if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
                 let num = event.key;
                 // Conversion des codes du pavé numérique
@@ -344,13 +373,20 @@
                 appendNumber(num);
             }
             
-            // Opérateurs
+            // Opérateurs et touches spéciales
             switch (event.key) {
                 case '+':
+                    appendOperator('+');
+                    break;
                 case '-':
+                    appendOperator('-');
+                    break;
                 case '*':
+                case 'x':
+                    appendOperator('*');
+                    break;
                 case '/':
-                    appendOperator(event.key);
+                    appendOperator('/');
                     break;
                 case 'Enter':
                 case '=':
@@ -364,60 +400,169 @@
                     clearDisplay();
                     break;
             }
-        });
 
-        // Supprimer tous les autres gestionnaires d'événements et ne garder que ceux-ci
-        function handleTouchEnd(event) {
-    event.preventDefault();
-    const button = event.target;
+            // Gestion du pavé numérique pour les opérateurs
+            switch (event.keyCode) {
+                case 107: // Pavé numérique +
+                    appendOperator('+');
+                    break;
+                case 109: // Pavé numérique -
+                    appendOperator('-');
+                    break;
+                case 106: // Pavé numérique *
+                    appendOperator('*');
+                    break;
+                case 111: // Pavé numérique /
+                    appendOperator('/');
+                    break;
+                case 13: // Pavé numérique Enter
+                    calculate();
+                    break;
+            }
 
-    if (button.tagName === 'BUTTON' && isPressed) {
-        isPressed = false;
-        outClickSound.currentTime = 0;
-        outClickSound.play().catch(() => {});
-        
-        // Check if the touch event is still ongoing
-        if (event.changedTouches && event.changedTouches.length > 0) {
-            handleButtonClick(button);
-        }
-    }
-}
-
-        function handleTouchEnd(event) {
-            event.preventDefault();
-            const button = event.target;
-            
-            if (button.tagName === 'BUTTON' && isPressed) {
-                isPressed = false;
+            // Jouer le son de relâchement sur desktop
+            if (!isMobile) {
                 outClickSound.currentTime = 0;
                 outClickSound.play().catch(() => {});
-                handleButtonClick(button);
+            }
+        });
+
+        // Ajouter ces fonctions d'aide pour la simulation visuelle
+        function simulateButtonPress(valueOrAction) {
+            let button;
+            if (['clear', 'delete', 'calculate'].includes(valueOrAction)) {
+                button = document.querySelector(`button[data-action="${valueOrAction}"]`);
+            } else {
+                button = document.querySelector(`button[data-value="${valueOrAction}"]`);
+            }
+            
+            if (button) {
+                button.classList.add('active');
+                button.style.transform = 'translateY(6px)';
+                button.style.boxShadow = '0 0 0 #1a291a, 0 0 0 rgba(0, 0, 0, 0.4), inset 0 -1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2)';
             }
         }
 
-        // Use only touch events on mobile
-if ('ontouchstart' in window) {
-    buttons.addEventListener('touchstart', handleTouchStart, { passive: false });
-    buttons.addEventListener('touchend', handleTouchEnd, { passive: false });
-} else {
-    // On desktop, use mouse events
-    buttons.addEventListener('mousedown', (event) => {
-        const button = event.target;
-        if (button.tagName === 'BUTTON') {
-            inClickSound.currentTime = 0;
-            inClickSound.play().catch(() => {});
+        function simulateButtonRelease(valueOrAction) {
+            let button;
+            if (['clear', 'delete', 'calculate'].includes(valueOrAction)) {
+                button = document.querySelector(`button[data-action="${valueOrAction}"]`);
+            } else {
+                button = document.querySelector(`button[data-value="${valueOrAction}"]`);
+            }
+            
+            if (button) {
+                button.classList.remove('active');
+                button.style.transform = '';
+                button.style.boxShadow = '';
+            }
         }
-    });
-    
-    buttons.addEventListener('mouseup', (event) => {
-        const button = event.target;
-        if (button.tagName === 'BUTTON') {
-            outClickSound.currentTime = 0;
-            outClickSound.play().catch(() => {});
-            handleButtonClick(button);
-        }
-    });
-}
+
+        // Modifier le gestionnaire keydown
+        document.addEventListener('keydown', function(event) {
+            if (event.repeat) return; // Éviter la répétition des touches maintenues
+            
+            // Empêcher les actions par défaut du navigateur
+            if (event.key === 'Enter') {
+                event.preventDefault();
+            }
+
+            let buttonValue = null;
+
+            // Gestion des touches numériques
+            if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
+                buttonValue = event.keyCode >= 96 && event.keyCode <= 105 ? 
+                             (event.keyCode - 96).toString() : 
+                             event.key;
+                simulateButtonPress(buttonValue);
+                appendNumber(buttonValue);
+            }
+
+            // Gestion des opérateurs
+            switch (event.key) {
+                case '+': case '-': case '*': case '/':
+                    buttonValue = event.key;
+                    simulateButtonPress(buttonValue);
+                    appendOperator(buttonValue);
+                    break;
+            }
+
+            // Gestion du pavé numérique pour les opérateurs
+            switch (event.keyCode) {
+                case 107: simulateButtonPress('+'); appendOperator('+'); break;
+                case 109: simulateButtonPress('-'); appendOperator('-'); break;
+                case 106: simulateButtonPress('*'); appendOperator('*'); break;
+                case 111: simulateButtonPress('/'); appendOperator('/'); break;
+            }
+
+            // Ajouter la gestion des touches spéciales
+            switch (event.key) {
+                case 'Escape':
+                    simulateButtonPress('clear');
+                    clearDisplay();
+                    break;
+                case 'Backspace':
+                    simulateButtonPress('delete');
+                    deleteLastChar();
+                    break;
+                case 'Enter':
+                    simulateButtonPress('calculate');
+                    calculate();
+                    break;
+            }
+
+            // Jouer les sons sur desktop
+            if (!isMobile) {
+                inClickSound.currentTime = 0;
+                inClickSound.play().catch(() => {});
+                outClickSound.currentTime = 0;
+                outClickSound.play().catch(() => {});
+            }
+        });
+
+        // Ajouter le gestionnaire keyup
+        document.addEventListener('keyup', function(event) {
+            let buttonValue = null;
+
+            // Déterminer quelle touche a été relâchée
+            if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
+                buttonValue = event.keyCode >= 96 && event.keyCode <= 105 ? 
+                             (event.keyCode - 96).toString() : 
+                             event.key;
+            }
+
+            // Opérateurs
+            switch (event.key) {
+                case '+': case '-': case '*': case '/':
+                    buttonValue = event.key;
+                    break;
+            }
+
+            // Pavé numérique
+            switch (event.keyCode) {
+                case 107: buttonValue = '+'; break;
+                case 109: buttonValue = '-'; break;
+                case 106: buttonValue = '*'; break;
+                case 111: buttonValue = '/'; break;
+            }
+
+            if (buttonValue) {
+                simulateButtonRelease(buttonValue);
+            }
+
+            // Ajouter la gestion du relâchement des touches spéciales
+            switch (event.key) {
+                case 'Escape':
+                    simulateButtonRelease('clear');
+                    break;
+                case 'Backspace':
+                    simulateButtonRelease('delete');
+                    break;
+                case 'Enter':
+                    simulateButtonRelease('calculate');
+                    break;
+            }
+        });
 
         function handleButtonClick(button) {
             const action = button.dataset.action;
