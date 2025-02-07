@@ -92,7 +92,6 @@
         }
 
         button:hover {
-            background: linear-gradient(to bottom, #385838, #324d32);
             transform: translateY(0);
             box-shadow: 
                 0 6px 0 #1a291a,
@@ -103,7 +102,7 @@
 
         button:active {
             transform: translateY(6px);
-            background: linear-gradient(to bottom, #2d432d, #263926);
+            background: linear-gradient(to bottom, #324d32, #2d432d);
             box-shadow: 
                 0 0 0 #1a291a,
                 0 0 0 rgba(0, 0, 0, 0.4),
@@ -121,12 +120,12 @@
         }
 
         button.operator:hover {
-            background: #618961;
+            background: linear-gradient(to bottom, #4f7f4f, #4a764a);
         }
 
         button.operator:active {
             transform: translateY(6px);
-            background: linear-gradient(to bottom, #456e45, #3d5d3d);
+            background: linear-gradient(to bottom, #4f7f4f, #4a764a);
             box-shadow: 
                 0 0 0 #2d432d,
                 0 0 0 rgba(0, 0, 0, 0.4),
@@ -146,12 +145,12 @@
         }
 
         button.equals:hover {
-            background: #72a772;
+            background: linear-gradient(to bottom, #5c8c5c, #568656);
         }
 
         button.equals:active {
             transform: translateY(6px);
-            background: linear-gradient(to bottom, #4f7f4f, #456e45);
+            background: linear-gradient(to bottom, #5c8c5c, #568656);
             box-shadow: 
                 0 0 0 #2d432d,
                 0 0 0 rgba(0, 0, 0, 0.4),
@@ -195,7 +194,7 @@
 
         @media (hover: none) {
             button:hover {
-                background: #2d432d;
+                background: linear-gradient(to bottom, #324d32, #2d432d);
                 transform: translateY(0);
                 box-shadow: 
                     0 6px 0 #1a291a,
@@ -206,23 +205,22 @@
 
             button:active {
                 transform: translateY(6px) !important;
-                background: linear-gradient(to bottom, #2d432d, #263926) !important;
+                background: linear-gradient(to bottom, #324d32, #2d432d) !important;
                 box-shadow: 
                     0 0 0 #1a291a,
                     0 0 0 rgba(0, 0, 0, 0.4),
                     inset 0 -1px 2px rgba(0, 0, 0, 0.3),
                     inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
-                transition: all 0.1s ease;
             }
 
             button.operator:active {
                 transform: translateY(6px) !important;
-                background: linear-gradient(to bottom, #456e45, #3d5d3d) !important;
+                background: linear-gradient(to bottom, #4f7f4f, #4a764a) !important;
             }
 
             button.equals:active {
                 transform: translateY(6px) !important;
-                background: linear-gradient(to bottom, #4f7f4f, #456e45) !important;
+                background: linear-gradient(to bottom, #5c8c5c, #568656) !important;
             }
         }
     </style>
@@ -231,28 +229,28 @@
     <div class="calculator">
         <div class="display" id="display">0</div>
         <div class="buttons">
-            <button onclick="clearDisplay()">C</button>
-            <button onclick="appendOperator('/')">/</button>
-            <button onclick="appendOperator('*')">×</button>
-            <button onclick="deleteLastChar()">←</button>
+            <button data-action="clear">C</button>
+            <button data-action="operator" data-value="/">/</button>
+            <button data-action="operator" data-value="*">×</button>
+            <button data-action="delete">←</button>
             
-            <button onclick="appendNumber('7')">7</button>
-            <button onclick="appendNumber('8')">8</button>
-            <button onclick="appendNumber('9')">9</button>
-            <button onclick="appendOperator('-')" class="operator">-</button>
+            <button data-action="number" data-value="7">7</button>
+            <button data-action="number" data-value="8">8</button>
+            <button data-action="number" data-value="9">9</button>
+            <button data-action="operator" data-value="-" class="operator">-</button>
             
-            <button onclick="appendNumber('4')">4</button>
-            <button onclick="appendNumber('5')">5</button>
-            <button onclick="appendNumber('6')">6</button>
-            <button onclick="appendOperator('+')" class="operator">+</button>
+            <button data-action="number" data-value="4">4</button>
+            <button data-action="number" data-value="5">5</button>
+            <button data-action="number" data-value="6">6</button>
+            <button data-action="operator" data-value="+" class="operator">+</button>
             
-            <button onclick="appendNumber('1')">1</button>
-            <button onclick="appendNumber('2')">2</button>
-            <button onclick="appendNumber('3')">3</button>
+            <button data-action="number" data-value="1">1</button>
+            <button data-action="number" data-value="2">2</button>
+            <button data-action="number" data-value="3">3</button>
             
-            <button onclick="appendNumber('0')">0</button>
-            <button onclick="appendNumber('.')">.</button>
-            <button onclick="calculate()" class="equals">=</button>
+            <button data-action="number" data-value="0">0</button>
+            <button data-action="number" data-value=".">.</button>
+            <button data-action="calculate" class="equals">=</button>
         </div>
     </div>
 
@@ -367,6 +365,61 @@
             if (event.target.tagName === 'BUTTON') {
                 event.preventDefault();
                 event.target.click();
+            }
+        }, {passive: false});
+
+        // Nouvelle gestion unifiée des clics
+        function handleButtonClick(button) {
+            const action = button.dataset.action;
+            const value = button.dataset.value;
+
+            switch(action) {
+                case 'number':
+                    appendNumber(value);
+                    break;
+                case 'operator':
+                    appendOperator(value);
+                    break;
+                case 'calculate':
+                    calculate();
+                    break;
+                case 'clear':
+                    clearDisplay();
+                    break;
+                case 'delete':
+                    deleteLastChar();
+                    break;
+            }
+        }
+
+        // Gestion des événements click (pour desktop)
+        document.querySelector('.buttons').addEventListener('click', function(event) {
+            if (event.target.tagName === 'BUTTON') {
+                handleButtonClick(event.target);
+            }
+        });
+
+        // Remplacer les gestionnaires touch existants par :
+        let touchStartTime;
+        let isProcessing = false;
+
+        document.addEventListener('touchstart', function(event) {
+            if (event.target.tagName === 'BUTTON') {
+                event.preventDefault();
+                touchStartTime = Date.now();
+            }
+        }, {passive: false});
+
+        document.addEventListener('touchend', function(event) {
+            if (event.target.tagName === 'BUTTON' && !isProcessing) {
+                event.preventDefault();
+                
+                // Vérifier si c'est un tap rapide (moins de 300ms)
+                if (Date.now() - touchStartTime < 300) {
+                    isProcessing = true;
+                    handleButtonClick(event.target);
+                    setTimeout(() => { isProcessing = false; }, 100);
+                }
             }
         }, {passive: false});
     </script>
