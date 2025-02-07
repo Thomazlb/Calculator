@@ -316,6 +316,39 @@
         button.settings {
             background: linear-gradient(to bottom, #666666, #555555);
             color: white;
+            z-index: 1001; /* S'assurer que le bouton est au-dessus du panneau */
+        }
+
+        button.settings:active,
+        button.settings.active {
+            transform: translateY(6px);
+            background: linear-gradient(to bottom, #666666, #555555) !important;
+            box-shadow: 
+                0 0 0 #444444,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Modifier les styles du panneau de thèmes pour mobile */
+        @media (max-width: 480px) {
+            .theme-panel {
+                padding: 15px;
+                gap: 10px;
+            }
+
+            .theme-btn {
+                width: 45px;
+                height: 45px;
+            }
+
+            .calculator.panel-active {
+                transform: translateY(-30px);
+            }
+
+            .theme-panel.active {
+                transform: translate(-50%, -10px);
+            }
         }
     </style>
 </head>
@@ -334,7 +367,7 @@
             <button data-action="clear">C</button>
             <button data-action="operator" data-value="/">/</button>
             <button data-action="operator" data-value="*">×</button>
-            <button data-action="delete">←</button>
+            <button data-action="settings" class="settings">⚙️</button>
             
             <button data-action="number" data-value="7">7</button>
             <button data-action="number" data-value="8">8</button>
@@ -349,11 +382,11 @@
             <button data-action="number" data-value="1">1</button>
             <button data-action="number" data-value="2">2</button>
             <button data-action="number" data-value="3">3</button>
+            <button data-action="delete">←</button>
             
             <button data-action="number" data-value="0">0</button>
             <button data-action="number" data-value=".">.</button>
             <button data-action="calculate" class="equals">=</button>
-            <button data-action="settings" class="settings">⚙️</button>
         </div>
     </div>
 
