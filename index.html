@@ -257,6 +257,7 @@
     <script>
         let displayValue = '0';
         const display = document.getElementById('display');
+        let activeButton = null; // Pour suivre le bouton actuellement pressé
         
         // Ajouter les sons
         const inClickSound = new Audio('inclick.mp3');
@@ -364,8 +365,9 @@
             if (event.target.tagName === 'BUTTON' && !isProcessing) {
                 event.preventDefault();
                 isProcessing = true;
+                activeButton = event.target;
                 
-                // Jouer le son inclick
+                // Jouer inclick quand le bouton commence à s'enfoncer
                 inClickSound.currentTime = 0;
                 inClickSound.play();
                 
@@ -376,12 +378,13 @@
 
         // Ajouter ce nouveau gestionnaire pour pointerup
         document.querySelector('.buttons').addEventListener('pointerup', function(event) {
-            if (event.target.tagName === 'BUTTON') {
-                // Jouer le son outclick
+            if (event.target.tagName === 'BUTTON' && activeButton === event.target) {
+                // Jouer outclick quand le bouton revient à sa position initiale
                 outClickSound.currentTime = 0;
                 outClickSound.play();
                 
                 handleButtonClick(event.target);
+                activeButton = null;
                 
                 setTimeout(() => {
                     isProcessing = false;
@@ -389,8 +392,28 @@
             }
         });
 
-        // Supprimer tous les autres gestionnaires d'événements touchstart/touchend/click
-        // Ne garder que la gestion du clavier physique
+        // Ajouter ce gestionnaire pour gérer le cas où le doigt sort du bouton
+        document.querySelector('.buttons').addEventListener('pointercancel', function(event) {
+            if (activeButton) {
+                outClickSound.currentTime = 0;
+                outClickSound.play();
+                activeButton = null;
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 200);
+            }
+        });
+
+        document.querySelector('.buttons').addEventListener('pointerleave', function(event) {
+            if (activeButton === event.target) {
+                outClickSound.currentTime = 0;
+                outClickSound.play();
+                activeButton = null;
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 200);
+            }
+        });
 
         function handleButtonClick(button) {
             const action = button.dataset.action;
