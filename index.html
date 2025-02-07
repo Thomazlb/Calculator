@@ -226,6 +226,8 @@
     </style>
 </head>
 <body>
+    <audio id="inclick" preload="auto" src="inclick.mp3"></audio>
+    <audio id="outclick" preload="auto" src="outclick.mp3"></audio>
     <div class="calculator">
         <div class="display" id="display">0</div>
         <div class="buttons">
@@ -257,10 +259,23 @@
     <script>
         let displayValue = '0';
         const display = document.getElementById('display');
-        
-        // Ajouter les sons
-        const inClickSound = new Audio('inclick.mp3');
-        const outClickSound = new Audio('outclick.mp3');
+        const inClickSound = document.getElementById('inclick');
+        const outClickSound = document.getElementById('outclick');
+
+        // Ajouter le préchargement des sons
+        window.addEventListener('load', () => {
+            // Précharger inclick
+            inClickSound.play().then(() => {
+                inClickSound.pause();
+                inClickSound.currentTime = 0;
+            }).catch(() => {});
+
+            // Précharger outclick
+            outClickSound.play().then(() => {
+                outClickSound.pause();
+                outClickSound.currentTime = 0;
+            }).catch(() => {});
+        });
         
         function updateDisplay(value) {
             const oldValue = display.textContent;
@@ -458,9 +473,11 @@
             
             if (button.tagName === 'BUTTON' && !isPressed) {
                 isPressed = true;
-                playSound(inClickSound);
                 
-                // Vibration
+                // Lecture optimisée du son inclick
+                inClickSound.currentTime = 0;
+                inClickSound.play().catch(() => {});
+                
                 if (navigator.vibrate) {
                     navigator.vibrate(40);
                 }
@@ -472,7 +489,11 @@
             
             if (button.tagName === 'BUTTON' && isPressed) {
                 isPressed = false;
-                playSound(outClickSound);
+                
+                // Lecture optimisée du son outclick
+                outClickSound.currentTime = 0;
+                outClickSound.play().catch(() => {});
+                
                 handleButtonClick(button);
             }
         }
