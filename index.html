@@ -345,39 +345,26 @@
             }
         });
 
-        // Supprimer tous les anciens gestionnaires d'événements tactiles
-        // et les remplacer par cette version simplifiée
-        let lastTapTime = 0;
+        // Supprimer TOUS les autres gestionnaires d'événements tactiles et les remplacer par ceci :
+        let isProcessing = false;
 
-        document.querySelector('.buttons').addEventListener('touchend', function(event) {
-            if (event.target.tagName === 'BUTTON') {
+        // Unique gestionnaire d'événements pour mobile et desktop
+        document.querySelector('.buttons').addEventListener('pointerdown', function(event) {
+            if (event.target.tagName === 'BUTTON' && !isProcessing) {
                 event.preventDefault();
-                
-                // Éviter les doubles taps accidentels
-                const currentTime = Date.now();
-                if (currentTime - lastTapTime > 300) {
-                    lastTapTime = currentTime;
-                    handleButtonClick(event.target);
-                }
-            }
-        }, {passive: false});
-
-        // Empêcher le comportement par défaut sur touchstart
-        document.querySelector('.buttons').addEventListener('touchstart', function(event) {
-            if (event.target.tagName === 'BUTTON') {
-                event.preventDefault();
-            }
-        }, {passive: false});
-
-        // Garder uniquement ce gestionnaire pour les clics desktop
-        document.querySelector('.buttons').addEventListener('click', function(event) {
-            // Ignorer les clics générés par les événements touch
-            if (event.target.tagName === 'BUTTON' && event.pointerType !== 'touch') {
+                isProcessing = true;
                 handleButtonClick(event.target);
+                
+                // Réinitialiser le drapeau après un court délai
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 200);
             }
-        });
+        }, {passive: false});
 
-        // Nouvelle gestion unifiée des clics
+        // Supprimer tous les autres gestionnaires d'événements touchstart/touchend/click
+        // Ne garder que la gestion du clavier physique
+
         function handleButtonClick(button) {
             const action = button.dataset.action;
             const value = button.dataset.value;
