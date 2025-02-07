@@ -226,12 +226,12 @@
     </style>
 </head>
 <body>
-    <!-- Ajouter les éléments audio en haut -->
-    <audio id="inclick" preload="auto" src="inclick.mp3"></audio>
-    <audio id="outclick" preload="auto" src="outclick.mp3"></audio>
-
     <div class="calculator">
         <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button data-action="clear">C</button>
+            <button data-action="operator" data-value="/">/</button>
+            <button data-action="operator" data-value="*">×</button>
             <button data-action="delete">←</button>
             
             <button data-action="number" data-value="7">7</button>
