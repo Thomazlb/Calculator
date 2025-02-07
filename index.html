@@ -261,6 +261,8 @@
         const display = document.getElementById('display');
         const inClickSound = document.getElementById('inclick');
         const outClickSound = document.getElementById('outclick');
+        const buttons = document.querySelector('.buttons');
+        let isPressed = false;
 
         // Ajouter le préchargement des sons
         window.addEventListener('load', () => {
@@ -364,64 +366,57 @@
             }
         });
 
-        // Supprimer TOUS les autres gestionnaires d'événements tactiles et les remplacer par ceci :
-        let isProcessing = false;
-
-        // Ajouter cette fonction pour la vibration
-        function vibrate() {
-            if (navigator.vibrate) {
-                navigator.vibrate(40); // vibration courte de 40ms
-            }
-        }
-
-        // Unique gestionnaire d'événements pour mobile et desktop
-        document.querySelector('.buttons').addEventListener('pointerdown', function(event) {
-            if (event.target.tagName === 'BUTTON') {
-                event.preventDefault();
-                // Jouer inclick immédiatement quand le bouton s'enfonce
+        // Supprimer tous les autres gestionnaires d'événements et ne garder que ceux-ci
+        function handleTouchStart(event) {
+            event.preventDefault();
+            const button = event.touches[0].target;
+            
+            if (button.tagName === 'BUTTON' && !isPressed) {
+                isPressed = true;
                 inClickSound.currentTime = 0;
-                inClickSound.play();
+                inClickSound.play().catch(() => {});
                 
-                // Ajouter la vibration
                 if (navigator.vibrate) {
                     navigator.vibrate(40);
                 }
             }
-        }, {passive: false});
+        }
 
-        document.querySelector('.buttons').addEventListener('pointerup', function(event) {
-            if (event.target.tagName === 'BUTTON') {
-                // Jouer outclick immédiatement quand le bouton est relâché
+        function handleTouchEnd(event) {
+            event.preventDefault();
+            const button = event.target;
+            
+            if (button.tagName === 'BUTTON' && isPressed) {
+                isPressed = false;
                 outClickSound.currentTime = 0;
-                outClickSound.play();
-                
-                // Traiter l'action du bouton
-                handleButtonClick(event.target);
+                outClickSound.play().catch(() => {});
+                handleButtonClick(button);
             }
-        });
+        }
 
-        // Ajouter ce gestionnaire pour gérer le cas où le doigt sort du bouton
-        document.querySelector('.buttons').addEventListener('pointercancel', function(event) {
-            if (activeButton) {
-                outClickSound.currentTime = 0;
-                outClickSound.play();
-                activeButton = null;
-                setTimeout(() => {
-                    isProcessing = false;
-                }, 200);
-            }
-        });
-
-        document.querySelector('.buttons').addEventListener('pointerleave', function(event) {
-            if (activeButton === event.target) {
-                outClickSound.currentTime = 0;
-                outClickSound.play();
-                activeButton = null;
-                setTimeout(() => {
-                    isProcessing = false;
-                }, 200);
-            }
-        });
+        // Utiliser uniquement les événements touch sur mobile
+        if ('ontouchstart' in window) {
+            buttons.addEventListener('touchstart', handleTouchStart, { passive: false });
+            buttons.addEventListener('touchend', handleTouchEnd, { passive: false });
+        } else {
+            // Sur desktop, utiliser les événements mouse
+            buttons.addEventListener('mousedown', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    inClickSound.currentTime = 0;
+                    inClickSound.play().catch(() => {});
+                }
+            });
+            
+            buttons.addEventListener('mouseup', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    outClickSound.currentTime = 0;
+                    outClickSound.play().catch(() => {});
+                    handleButtonClick(button);
+                }
+            });
+        }
 
         function handleButtonClick(button) {
             const action = button.dataset.action;
@@ -445,60 +440,6 @@
                     break;
             }
         }
-
-        // Remplacer les gestionnaires d'événements existants par ceux-ci
-        const buttons = document.querySelector('.buttons');
-        let isPressed = false;
-
-        // Fonction pour jouer les sons de manière fiable
-        function playSound(sound) {
-            sound.currentTime = 0;
-            let playPromise = sound.play();
-            if (playPromise) {
-                playPromise.catch(error => {
-                    console.log("Erreur de lecture audio:", error);
-                });
-            }
-        }
-
-        // Gestion tactile et souris unifiée
-        buttons.addEventListener('touchstart', handleStart, { passive: false });
-        buttons.addEventListener('mousedown', handleStart, { passive: false });
-        buttons.addEventListener('touchend', handleEnd);
-        buttons.addEventListener('mouseup', handleEnd);
-
-        function handleStart(event) {
-            event.preventDefault();
-            const button = event.target;
-            
-            if (button.tagName === 'BUTTON' && !isPressed) {
-                isPressed = true;
-                
-                // Lecture optimisée du son inclick
-                inClickSound.currentTime = 0;
-                inClickSound.play().catch(() => {});
-                
-                if (navigator.vibrate) {
-                    navigator.vibrate(40);
-                }
-            }
-        }
-
-        function handleEnd(event) {
-            const button = event.target;
-            
-            if (button.tagName === 'BUTTON' && isPressed) {
-                isPressed = false;
-                
-                // Lecture optimisée du son outclick
-                outClickSound.currentTime = 0;
-                outClickSound.play().catch(() => {});
-                
-                handleButtonClick(button);
-            }
-        }
-
-        // Supprimer les autres gestionnaires d'événements (pointercancel, pointerleave, etc.)
     </script>
 </body>
 </html>
