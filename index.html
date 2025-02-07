@@ -348,25 +348,34 @@
         // Supprimer TOUS les autres gestionnaires d'événements tactiles et les remplacer par ceci :
         let isProcessing = false;
 
-        // Ajouter cette fonction pour la vibration
+        // Modifier la fonction vibrate pour qu'elle soit plus fiable
         function vibrate() {
-            if (navigator.vibrate) {
-                navigator.vibrate(40); // vibration courte de 40ms
+            try {
+                if ('vibrate' in navigator) {
+                    window.navigator.vibrate(50); // Augmentation de la durée à 50ms pour une meilleure perception
+                }
+            } catch (e) {
+                console.log('Vibration non supportée');
             }
         }
 
-        // Unique gestionnaire d'événements pour mobile et desktop
+        // Modifier le gestionnaire d'événements pour inclure un feedback haptique plus fort
         document.querySelector('.buttons').addEventListener('pointerdown', function(event) {
             if (event.target.tagName === 'BUTTON' && !isProcessing) {
                 event.preventDefault();
                 isProcessing = true;
                 
-                // Ajouter la vibration
-                vibrate();
+                // Tentative de vibration plus forte avec un pattern
+                try {
+                    if ('vibrate' in navigator) {
+                        window.navigator.vibrate([30, 10, 30]); // Pattern: vibrer-pause-vibrer
+                    }
+                } catch (e) {
+                    console.log('Vibration non supportée');
+                }
                 
                 handleButtonClick(event.target);
                 
-                // Réinitialiser le drapeau après un court délai
                 setTimeout(() => {
                     isProcessing = false;
                 }, 200);
