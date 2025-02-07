@@ -367,20 +367,21 @@
         });
 
         // Supprimer tous les autres gestionnaires d'événements et ne garder que ceux-ci
-        function handleTouchStart(event) {
-            event.preventDefault();
-            const button = event.touches[0].target;
-            
-            if (button.tagName === 'BUTTON' && !isPressed) {
-                isPressed = true;
-                inClickSound.currentTime = 0;
-                inClickSound.play().catch(() => {});
-                
-                if (navigator.vibrate) {
-                    navigator.vibrate(40);
-                }
-            }
+        function handleTouchEnd(event) {
+    event.preventDefault();
+    const button = event.target;
+
+    if (button.tagName === 'BUTTON' && isPressed) {
+        isPressed = false;
+        outClickSound.currentTime = 0;
+        outClickSound.play().catch(() => {});
+        
+        // Check if the touch event is still ongoing
+        if (event.changedTouches && event.changedTouches.length > 0) {
+            handleButtonClick(button);
         }
+    }
+}
 
         function handleTouchEnd(event) {
             event.preventDefault();
@@ -394,29 +395,29 @@
             }
         }
 
-        // Utiliser uniquement les événements touch sur mobile
-        if ('ontouchstart' in window) {
-            buttons.addEventListener('touchstart', handleTouchStart, { passive: false });
-            buttons.addEventListener('touchend', handleTouchEnd, { passive: false });
-        } else {
-            // Sur desktop, utiliser les événements mouse
-            buttons.addEventListener('mousedown', (event) => {
-                const button = event.target;
-                if (button.tagName === 'BUTTON') {
-                    inClickSound.currentTime = 0;
-                    inClickSound.play().catch(() => {});
-                }
-            });
-            
-            buttons.addEventListener('mouseup', (event) => {
-                const button = event.target;
-                if (button.tagName === 'BUTTON') {
-                    outClickSound.currentTime = 0;
-                    outClickSound.play().catch(() => {});
-                    handleButtonClick(button);
-                }
-            });
+        // Use only touch events on mobile
+if ('ontouchstart' in window) {
+    buttons.addEventListener('touchstart', handleTouchStart, { passive: false });
+    buttons.addEventListener('touchend', handleTouchEnd, { passive: false });
+} else {
+    // On desktop, use mouse events
+    buttons.addEventListener('mousedown', (event) => {
+        const button = event.target;
+        if (button.tagName === 'BUTTON') {
+            inClickSound.currentTime = 0;
+            inClickSound.play().catch(() => {});
         }
+    });
+    
+    buttons.addEventListener('mouseup', (event) => {
+        const button = event.target;
+        if (button.tagName === 'BUTTON') {
+            outClickSound.currentTime = 0;
+            outClickSound.play().catch(() => {});
+            handleButtonClick(button);
+        }
+    });
+}
 
         function handleButtonClick(button) {
             const action = button.dataset.action;
