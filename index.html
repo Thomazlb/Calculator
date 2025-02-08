@@ -607,6 +607,51 @@
         .calculator.transitioning {
             animation: modeTransition 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+
+        @keyframes buttonIn {
+            0% {
+                opacity: 0;
+                transform: translateY(15px) scale(0.9);
+                filter: blur(5px);
+            }
+            70% {
+                opacity: 1;
+                transform: translateY(-2px) scale(1.02);
+                filter: blur(0);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        @keyframes buttonOut {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-15px) scale(0.95);
+                filter: blur(5px);
+            }
+        }
+
+        .buttons button {
+            /* ...existing properties... */
+            backface-visibility: hidden;
+            will-change: transform, opacity, filter;
+        }
+
+        .buttons.transitioning {
+            pointer-events: none;
+        }
+
+        .buttons.transitioning button {
+            transition: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1192,20 +1237,28 @@
         const buttonsContainer = document.querySelector('.buttons');
 
         function toggleProMode() {
-            isProMode = !isProMode;
-            
-            // Phase 1 : Fade out des boutons actuels
+            if (isAnimating) return;
+            isAnimating = true;
+
             const currentButtons = buttonsContainer.querySelectorAll('button');
-            currentButtons.forEach(button => {
-                button.style.opacity = '0';
-                button.style.transform = 'translateY(10px)';
+            buttonsContainer.classList.add('transitioning');
+
+            // Grouper les boutons par lignes
+            const rows = Math.ceil(currentButtons.length / (isProMode ? 4 : 5));
+            const columns = isProMode ? 4 : 5;
+
+            currentButtons.forEach((button, index) => {
+                // Calcul de la ligne et colonne pour un timing plus naturel
+                const row = Math.floor(index / columns);
+                const col = index % columns;
+                const delay = (row * 30) + (col * 20); // Timing ajusté pour éviter le saccadement
+
+                button.style.animation = `buttonOut 0.4s cubic-bezier(0.4, 0.0, 0.2, 1) forwards`;
+                button.style.animationDelay = `${delay}ms`;
             });
-            
-            // Phase 2 : Transition de la calculatrice
-            calculator.classList.add('transitioning');
-            buttonsContainer.classList.add('fade-out');
-            
+
             setTimeout(() => {
+                isProMode = !isProMode;
                 calculator.classList.toggle('pro-active');
                 buttonsContainer.classList.toggle('pro-mode');
                 
@@ -1214,34 +1267,33 @@
                 } else {
                     updateBasicButtons();
                 }
-                
-                // Phase 3 : Animation des nouveaux boutons
-                requestAnimationFrame(() => {
-                    buttonsContainer.classList.remove('fade-out');
-                    buttonsContainer.classList.add('fade-in');
-                    
-                    // Exécuter l'animation des boutons après un court délai
-                    setTimeout(() => {
-                        const newButtons = buttonsContainer.querySelectorAll('button');
-                        newButtons.forEach((button, index) => {
-                            button.style.opacity = '0';
-                            button.style.transform = 'translateY(20px)';
-                            
-                            setTimeout(() => {
-                                button.style.opacity = '1';
-                                button.style.transform = 'translateY(0)';
-                            }, index * 50);
-                        });
-                        
-                        // Phase 4 : Nettoyage final
-                        setTimeout(() => {
-                            calculator.classList.remove('transitioning');
-                            buttonsContainer.classList.remove('fade-in');
-                        }, newButtons.length * 50 + 300);
-                    }, 100);
+
+                // Animation d'entrée plus fluide
+                const newButtons = buttonsContainer.querySelectorAll('button');
+                const newRows = Math.ceil(newButtons.length / (isProMode ? 5 : 4));
+
+                newButtons.forEach((button, index) => {
+                    const row = Math.floor(index / (isProMode ? 5 : 4));
+                    const col = index % (isProMode ? 5 : 4);
+                    const delay = (row * 30) + (col * 20);
+
+                    button.style.opacity = '0';
+                    button.style.animation = `buttonIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`;
+                    button.style.animationDelay = `${delay}ms`;
                 });
-            }, 300);
+
+                setTimeout(() => {
+                    buttonsContainer.classList.remove('transitioning');
+                    isAnimating = false;
+                    newButtons.forEach(button => {
+                        button.style.animation = '';
+                        button.style.opacity = '1';
+                    });
+                }, newRows * 150); // Délai ajusté basé sur le nombre de lignes
+            }, rows * 150);
         }
+
+        let isAnimating = false; // Ajouter cette variable au début du script
 
         function getProButtonsHTML() {
             return `<!-- Pro buttons HTML -->`;
