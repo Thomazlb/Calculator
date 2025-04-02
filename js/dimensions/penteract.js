@@ -142,11 +142,11 @@ class Penteract {
     
     update(time) {
         if (this.object) {
-            // Mise à jour des rotations (uniquement sur un axe principal)
+            // Mise à jour uniquement des rotations 5D
             this.rotations.xy = 0;
             this.rotations.xz = 0;
             this.rotations.xw = 0;
-            this.rotations.xv = time * 0.2; // Garder uniquement la rotation 5D principale
+            this.rotations.xv = time * 0.2; // Animation 5D
             this.rotations.yz = 0;
             this.rotations.yw = 0;
             this.rotations.yv = 0;
@@ -156,7 +156,12 @@ class Penteract {
             
             // Mettre à jour la projection
             this.updateProjection();
-            
+        }
+    }
+    
+    // Nouvelle méthode pour la rotation 3D uniquement
+    rotate(time) {
+        if (this.object) {
             // Rotation 3D uniquement sur l'axe Y
             this.object.rotation.y = time * 0.1;
         }
@@ -186,6 +191,6 @@ class Penteract {
     }
     
     getDescription() {
-        return "Le penteract (5D) est construit à partir de deux tesseracts reliés dans une 5e dimension perpendiculaire aux quatre premières. Il possède 32 sommets, 80 arêtes, 80 faces carrées, 40 cellules cubiques et 10 cellules tesseractiques. La visualisation est particulièrement abstraite car nous observons une double projection (5D→4D→3D) où les informations dimensionnelles sont fortement compressées. Les différentes teintes de gris représentent la position dans les 4e et 5e dimensions, créant une illusion de profondeur. L'enchevêtrement complexe que vous voyez n'est qu'un écho très limité de la structure complète, inaccessible à notre perception tridimensionnelle.";
+        return "Le penteract (5D) est construit à partir de deux tesseracts reliés dans une 5e dimension perpendiculaire aux quatre premières.\n\nIl possède 32 sommets, 80 arêtes, 80 faces carrées, 40 cellules cubiques et 10 cellules tesseractiques. La visualisation est particulièrement abstraite car nous observons une double projection (5D→4D→3D) où les informations dimensionnelles sont fortement compressées.\n\nLes différentes teintes de gris représentent la position dans les 4e et 5e dimensions, créant une illusion de profondeur multidimensionnelle. Plus un sommet est foncé, plus il est \"distant\" dans les dimensions supérieures.\n\nL'enchevêtrement complexe que vous voyez n'est qu'un écho très limité de la structure complète. Quand la projection tourne dans la 5e dimension, vous observez comment des formes apparemment déconnectées sont en réalité reliées par des chemins traversant des dimensions inaccessibles à notre perception directe.\n\nLa difficulté de visualisation du penteract n'est pas un défaut de représentation, mais illustre les limites fondamentales de notre perception spatiale face aux structures mathématiques de dimension supérieure. Ces limites nous rappellent que l'intuition visuelle doit souvent céder la place au raisonnement abstrait en mathématiques avancées.";
     }
 }

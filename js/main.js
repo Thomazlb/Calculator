@@ -5,7 +5,8 @@ class DimensionalApp {
     constructor() {
         this.currentDimension = 0;
         this.previousDimension = null;
-        this.animationSpeed = 0.5;
+        this.animationSpeed = 0.5;  // Vitesse d'animation (transformations 4D, 5D)
+        this.rotationSpeed = 0.5;   // Vitesse de rotation 3D
         this.animationPaused = false;
         this.clock = new THREE.Clock();
         this.elapsedTime = 0;
@@ -47,10 +48,11 @@ class DimensionalApp {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0xffffff);
         
-        // Ajuster la configuration de la caméra selon le dispositif
-        const fov = this.isMobile ? 85 : 75; // FOV plus large sur mobile
+        // Ajuster plus finement la configuration de la caméra selon le dispositif
+        const smallScreen = window.innerWidth <= 600;
+        const fov = this.isMobile ? (smallScreen ? 90 : 85) : 75;
         this.camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(0, 0, this.isMobile ? 3.5 : 2.5); // Position plus éloignée sur mobile
+        this.camera.position.set(0, 0, this.isMobile ? (smallScreen ? 4 : 3.5) : 2.5);
         
         // Renderer optimisé selon le dispositif
         this.renderer = new THREE.WebGLRenderer({ 
@@ -58,8 +60,7 @@ class DimensionalApp {
             alpha: true,
             powerPreference: this.isMobile ? 'low-power' : 'high-performance'
         });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(this.isMobile ? Math.min(window.devicePixelRatio, 1.5) : window.devicePixelRatio);
+        this.updateRendererSize();
         this.renderer.setClearColor(0xffffff, 1);
         this.container.appendChild(this.renderer.domElement);
         
@@ -80,6 +81,39 @@ class DimensionalApp {
         if (this.isMobile) {
             this.initTouchControls();
         }
+    }
+    
+    updateRendererSize() {
+        if (!this.renderer || !this.container) return;
+        
+        const previewPanel = document.getElementById('preview-panel');
+        const isExpanded = previewPanel && previewPanel.classList.contains('expanded');
+        
+        // Récupérer les dimensions actuelles du canvas pour une transition plus fluide
+        const oldCanvas = this.renderer.domElement;
+        const oldPixelRatio = this.renderer.getPixelRatio();
+        
+        if (isExpanded) {
+            // Mode plein écran - utiliser les dimensions de la fenêtre
+            this.renderer.setSize(window.innerWidth, window.innerHeight, false);
+            this.camera.aspect = window.innerWidth / window.innerHeight;
+        } else {
+            // Mode normal - utiliser les dimensions du conteneur mais préserver l'aspect ratio
+            const rect = this.container.getBoundingClientRect();
+            const size = Math.min(rect.width, rect.height);
+            
+            // Important: false comme troisième paramètre pour éviter de modifier le style CSS
+            // qui pourrait causer un flou
+            this.renderer.setSize(size, size, false);
+            this.camera.aspect = 1; // Forcer un aspect carré pour éviter la distorsion
+        }
+        
+        // Mettre à jour la matrice de projection après avoir changé l'aspect ratio
+        this.camera.updateProjectionMatrix();
+        
+        // Pixel ratio fixe pour éviter le flou sur certains appareils
+        // Mais conserver le même qu'avant pour éviter les saccades lors des transitions
+        this.renderer.setPixelRatio(oldPixelRatio);
     }
     
     initTouchControls() {
@@ -154,11 +188,74 @@ class DimensionalApp {
     }
     
     initControls() {
-        // Slider de vitesse de rotation
+        // Slider de vitesse d'animation (pour les transformations 4D/5D)
         this.speedSlider = document.getElementById('rotation-speed');
+        
+        // Fonction pour mettre à jour la couleur du gradient en fonction de la valeur
+        const updateSliderBackground = (slider, value) => {
+            const percent = value + '%';
+            slider.style.background = `linear-gradient(90deg, var(--text-color) 0%, var(--text-color) ${percent}, rgba(22, 33, 62, 0.1) ${percent})`;
+        };
+        
+        // Initialiser la couleur du gradient du premier slider
+        updateSliderBackground(this.speedSlider, this.speedSlider.value);
+        
+        // Mettre à jour la couleur du gradient et la vitesse d'animation
         this.speedSlider.addEventListener('input', (e) => {
-            this.animationSpeed = e.target.value / 50;
+            const value = e.target.value;
+            updateSliderBackground(e.target, value);
+            this.animationSpeed = value / 50;
+            
+            // Effet élastique lors du déplacement du slider
+            const thumb = this.speedSlider.querySelector('::-webkit-slider-thumb');
+            if (thumb) {
+                thumb.style.transform = 'scale(1.3)';
+                setTimeout(() => {
+                    thumb.style.transform = '';
+                }, 200);
+            }
         });
+        
+        // Nouveau slider pour la vitesse de rotation 3D
+        this.rotationSlider = document.getElementById('rotation-speed-3d');
+        
+        // Initialiser la couleur du gradient du second slider
+        updateSliderBackground(this.rotationSlider, this.rotationSlider.value);
+        
+        // Écouter les changements sur le slider de rotation
+        this.rotationSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            updateSliderBackground(e.target, value);
+            this.rotationSpeed = value / 50;
+            
+            // Effet élastique pour ce slider aussi
+            const thumb = this.rotationSlider.querySelector('::-webkit-slider-thumb');
+            if (thumb) {
+                thumb.style.transform = 'scale(1.3)';
+                setTimeout(() => {
+                    thumb.style.transform = '';
+                }, 200);
+            }
+        });
+        
+        // Effet élastique agréable au relâchement des sliders
+        const addBounceEffect = (slider) => {
+            slider.addEventListener('change', () => {
+                // Animation légère de rebond
+                slider.animate([
+                    { transform: 'scaleY(1.1)' },
+                    { transform: 'scaleY(0.95)' },
+                    { transform: 'scaleY(1.02)' },
+                    { transform: 'scaleY(1)' }
+                ], { 
+                    duration: 400,
+                    easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                });
+            });
+        };
+        
+        addBounceEffect(this.speedSlider);
+        addBounceEffect(this.rotationSlider);
         
         // Bouton de pause/lecture
         this.toggleAnimationBtn = document.getElementById('toggle-animation');
@@ -191,20 +288,293 @@ class DimensionalApp {
         // Sélectionner le bouton de la dimension actuelle
         this.updateActiveDimensionButton();
         
-        // Gestion de l'expansion/réduction du panneau d'information
-        const toggleInfoBtn = document.querySelector('.toggle-info');
+        // Gestion de l'expansion/réduction du panneau d'information avec animation améliorée
         const infoPanel = document.getElementById('info-panel');
+        const infoOverlay = document.getElementById('info-overlay');
         
-        if (toggleInfoBtn && infoPanel) {
-            toggleInfoBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                infoPanel.classList.toggle('expanded');
+        if (infoPanel) {
+            // Gestion du défilement sans déclencher le clic
+            infoPanel.addEventListener('wheel', (e) => {
+                const canScroll = infoPanel.scrollHeight > infoPanel.clientHeight;
                 
-                // Mise à jour du tooltip
-                toggleInfoBtn.title = infoPanel.classList.contains('expanded') 
-                    ? "Afficher moins" 
-                    : "Afficher plus";
+                if (canScroll && !infoPanel.classList.contains('expanded')) {
+                    // Empêcher l'événement de défilement de se propager
+                    e.stopPropagation();
+                    
+                    // Ajouter temporairement la classe scrollable
+                    infoPanel.classList.add('scrollable');
+                    
+                    // Retirer la classe après un court délai
+                    clearTimeout(infoPanel.scrollTimeout);
+                    infoPanel.scrollTimeout = setTimeout(() => {
+                        infoPanel.classList.remove('scrollable');
+                    }, 1000);
+                }
             });
+            
+            // Clic sur le panneau pour l'agrandir avec animation fluide
+            infoPanel.addEventListener('click', (e) => {
+                // Ne pas déclencher si on est en train de faire défiler
+                if (infoPanel.classList.contains('scrollable')) {
+                    return;
+                }
+                
+                if (!infoPanel.classList.contains('expanded') && !infoPanel.classList.contains('animating')) {
+                    // Marquer le panneau comme étant en animation pour éviter les doubles clics
+                    infoPanel.classList.add('animating');
+                    
+                    // Stocker la position originale comme variables CSS pour l'animation
+                    const rect = infoPanel.getBoundingClientRect();
+                    
+                    // Avant tout, on sauvegarde les valeurs de style initiales
+                    const originalStyle = {
+                        position: infoPanel.style.position || '',
+                        top: infoPanel.style.top || '',
+                        left: infoPanel.style.left || '',
+                        width: infoPanel.style.width || '',
+                        height: infoPanel.style.height || '',
+                        transform: infoPanel.style.transform || '',
+                        zIndex: infoPanel.style.zIndex || ''
+                    };
+                    
+                    // Enregistrer la position initiale pour une restauration précise
+                    infoPanel.dataset.originalStyle = JSON.stringify(originalStyle);
+                    
+                    // Fixer la position du panneau précisément où il est avant l'animation
+                    infoPanel.style.position = 'fixed';
+                    infoPanel.style.top = rect.top + 'px';
+                    infoPanel.style.left = rect.left + 'px';
+                    infoPanel.style.width = rect.width + 'px';
+                    infoPanel.style.height = rect.height + 'px';
+                    infoPanel.style.margin = '0';
+                    infoPanel.style.zIndex = '2000';
+                    
+                    // On force un reflow pour que les changements soient appliqués immédiatement
+                    void infoPanel.offsetWidth;
+                    
+                    // Afficher l'overlay
+                    infoOverlay.classList.add('visible');
+                    
+                    // Appliquer la transformation vers le centre avec une transition CSS
+                    requestAnimationFrame(() => {
+                        infoPanel.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                        infoPanel.style.top = '50%';
+                        infoPanel.style.left = '50%';
+                        infoPanel.style.width = '80vw';
+                        infoPanel.style.maxWidth = '800px';
+                        infoPanel.style.height = 'auto';
+                        infoPanel.style.maxHeight = '80vh';
+                        infoPanel.style.transform = 'translate(-50%, -50%)';
+                        infoPanel.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                        infoPanel.style.padding = '20px';
+                        
+                        infoPanel.classList.add('expanded');
+                        
+                        // Retirer la marque d'animation après la transition
+                        setTimeout(() => {
+                            infoPanel.classList.remove('animating');
+                        }, 600);
+                    });
+                }
+            });
+            
+            // Réduire le panneau avec animation fluide
+            const collapseInfoPanel = () => {
+                if (infoPanel.classList.contains('expanded') && !infoPanel.classList.contains('animating')) {
+                    // Marquer le panneau comme en animation
+                    infoPanel.classList.add('animating');
+                    
+                    // Ajouter l'effet de fondu à l'overlay
+                    infoOverlay.classList.add('fading');
+                    
+                    // Récupérer le style original
+                    let originalStyle = {};
+                    try {
+                        if (infoPanel.dataset.originalStyle) {
+                            originalStyle = JSON.parse(infoPanel.dataset.originalStyle);
+                        }
+                    } catch (e) {
+                        console.error("Erreur de parsing du style original:", e);
+                    }
+                    
+                    // Obtenir la position actuelle dans le DOM
+                    const panelRect = infoPanel.getBoundingClientRect();
+                    
+                    // Stocker la position et taille du panneau étendu avant de le réduire
+                    const expandedRect = {
+                        width: panelRect.width,
+                        height: panelRect.height
+                    };
+                    
+                    // Calculer la position cible (position originale) en fonction des attributs de grid
+                    // Obtenir l'élément parent et sa position
+                    const panelParent = infoPanel.parentElement;
+                    const gridComputedStyle = window.getComputedStyle(infoPanel);
+                    
+                    // Trouver l'élément de grille correspondant à la position originale
+                    const gridColumn = gridComputedStyle.gridColumnStart;
+                    const gridRow = gridComputedStyle.gridRowStart;
+                    
+                    // Mesurer la position dans le document après calcul de layout
+                    infoPanel.style.position = "relative";
+                    infoPanel.style.removeProperty("top");
+                    infoPanel.style.removeProperty("left");
+                    infoPanel.style.removeProperty("width");
+                    infoPanel.style.removeProperty("height");
+                    infoPanel.style.removeProperty("transform");
+                    
+                    // Forcer un reflow pour obtenir la future position
+                    document.body.offsetHeight;
+                    
+                    // Calculer les coordonnées de destination
+                    const destinationRect = infoPanel.getBoundingClientRect();
+                    
+                    // Rétablir les propriétés actuelles
+                    infoPanel.style.position = "fixed";
+                    infoPanel.style.top = "50%";
+                    infoPanel.style.left = "50%";
+                    infoPanel.style.width = expandedRect.width + "px";
+                    infoPanel.style.height = expandedRect.height + "px";
+                    infoPanel.style.transform = "translate(-50%, -50%)";
+                    
+                    // Forcer un nouveau reflow
+                    document.body.offsetHeight;
+                    
+                    // Animer vers la destination avec précision
+                    requestAnimationFrame(() => {
+                        infoPanel.style.transition = 'all 0.6s cubic-bezier(0.215, 0.61, 0.355, 1)';
+                        infoPanel.style.top = destinationRect.top + "px";
+                        infoPanel.style.left = destinationRect.left + "px";
+                        infoPanel.style.width = destinationRect.width + "px";
+                        infoPanel.style.height = destinationRect.height + "px";
+                        infoPanel.style.transform = 'translate(0, 0)';
+                        infoPanel.style.backgroundColor = '';
+                        
+                        infoPanel.classList.remove('expanded');
+                        
+                        // Nettoyer après l'animation
+                        setTimeout(() => {
+                            // Enlever l'overlay
+                            infoOverlay.classList.remove('visible', 'fading');
+                            
+                            // Restaurer complètement les styles d'origine
+                            infoPanel.style.position = '';
+                            infoPanel.style.top = '';
+                            infoPanel.style.left = '';
+                            infoPanel.style.width = '';
+                            infoPanel.style.height = '';
+                            infoPanel.style.transform = '';
+                            infoPanel.style.transition = '';
+                            infoPanel.style.margin = '';
+                            infoPanel.style.zIndex = '';
+                            infoPanel.style.backgroundColor = '';
+                            infoPanel.style.padding = '';
+                            infoPanel.style.maxWidth = '';
+                            infoPanel.style.maxHeight = '';
+                            
+                            // Retirer la marque d'animation
+                            infoPanel.classList.remove('animating');
+                        }, 600);
+                    });
+                }
+            };
+            
+            // Clic sur l'overlay pour réduire le panneau
+            infoOverlay.addEventListener('click', collapseInfoPanel);
+            
+            // Touche Escape pour réduire le panneau d'info
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && infoPanel.classList.contains('expanded')) {
+                    collapseInfoPanel();
+                }
+            });
+        }
+        
+        // Gestion de l'expansion/réduction du panneau de prévisualisation avec animation améliorée
+        const previewPanel = document.getElementById('preview-panel');
+        const expandButton = document.getElementById('expand-toggle');
+        
+        if (previewPanel && expandButton) {
+            const toggleExpansion = (event) => {
+                // Éviter la propagation pour ne pas interférer avec d'autres contrôles
+                event.stopPropagation();
+                
+                // Arrêter temporairement l'animation pour éviter les saccades
+                const wasPaused = this.animationPaused;
+                this.animationPaused = true;
+                
+                if (!previewPanel.classList.contains('expanded')) {
+                    // Expansion - ajout de la classe pour déclencher l'animation CSS
+                    previewPanel.classList.add('expanded');
+                    
+                    // Timer pour permettre à l'animation de se dérouler avant de redimensionner
+                    setTimeout(() => {
+                        this.updateRendererSize();
+                        this.animationPaused = wasPaused;
+                        this.renderer.render(this.scene, this.camera);
+                    }, 100); // Court délai pour permettre au DOM de s'actualiser
+                    
+                } else {
+                    // Réduction - ajouter la classe d'animation de sortie
+                    previewPanel.classList.add('collapsing');
+                    
+                    // Timer pour attendre la fin de l'animation avant de retirer la classe expanded
+                    setTimeout(() => {
+                        previewPanel.classList.remove('expanded');
+                        
+                        // Mettre à jour après que la transition ait commencé
+                        setTimeout(() => {
+                            this.updateRendererSize();
+                            this.resetCamera();
+                            this.animationPaused = wasPaused;
+                            this.renderer.render(this.scene, this.camera);
+                            
+                            // Nettoyer les classes d'animation
+                            setTimeout(() => {
+                                previewPanel.classList.remove('collapsing');
+                            }, 300);
+                        }, 300);
+                    }, 100);
+                }
+            };
+            
+            expandButton.addEventListener('click', toggleExpansion);
+            
+            // Permettre aussi de cliquer n'importe où dans le panneau pour l'agrandir
+            // sauf s'il est déjà agrandi
+            previewPanel.addEventListener('click', (event) => {
+                if (!previewPanel.classList.contains('expanded') && 
+                    (event.target === previewPanel || 
+                     event.target === document.getElementById('scene-container') ||
+                     event.target.parentNode === document.getElementById('scene-container'))) {
+                    toggleExpansion(event);
+                }
+            });
+            
+            // Permettre d'utiliser Escape pour réduire le panneau
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && previewPanel.classList.contains('expanded')) {
+                    toggleExpansion(event);
+                }
+            });
+            
+            // Supporter les gestes tactiles (pinch to zoom out)
+            if (typeof Hammer !== 'undefined' && this.isMobile) {
+                const hammer = new Hammer(previewPanel);
+                hammer.get('pinch').set({ enable: true });
+                
+                hammer.on('pinchout', (e) => {
+                    if (!previewPanel.classList.contains('expanded') && e.scale > 1.5) {
+                        toggleExpansion({stopPropagation: () => {}});
+                    }
+                });
+                
+                hammer.on('pinchin', (e) => {
+                    if (previewPanel.classList.contains('expanded') && e.scale < 0.6) {
+                        toggleExpansion({stopPropagation: () => {}});
+                    }
+                });
+            }
         }
     }
     
@@ -254,7 +624,27 @@ class DimensionalApp {
         }
         
         if (description && this.objects[newDimension]) {
-            description.textContent = this.objects[newDimension].getDescription();
+            let texteDescription = this.objects[newDimension].getDescription();
+            
+            // Ajouter explication spéciale, mais plus concise sur mobile
+            if (newDimension === 4) {
+                const isMobileView = window.innerWidth <= 600;
+                if (isMobileView) {
+                    texteDescription += "\n\nNote: Utilisez les deux contrôles de vitesse pour observer pleinement la structure 4D: l'animation contrôle la rotation 4D et la rotation 3D change votre perspective.";
+                } else {
+                    texteDescription += "\n\nNote: Pour visualiser correctement le mouvement du tesseract, utilisez à la fois le contrôle de vitesse d'animation (qui contrôle la rotation 4D) et le contrôle de vitesse de rotation (qui contrôle la rotation 3D de la projection). Cette combinaison vous permet d'observer comment l'objet se déforme dans la 4e dimension tout en changeant votre point de vue dans notre espace 3D, offrant ainsi une compréhension plus complète de sa structure géométrique.";
+                }
+            }
+            else if (newDimension === 5) {
+                const isMobileView = window.innerWidth <= 600;
+                if (isMobileView) {
+                    texteDescription += "\n\nNote: La visualisation du penteract nécessite deux projections (5D→4D→3D). Les nuances de gris représentent la position dans les 4e et 5e dimensions.";
+                } else {
+                    texteDescription += "\n\nNote: La visualisation du penteract est particulièrement abstraite car elle nécessite deux projections successives (5D→4D→3D). Les différentes nuances de gris représentent la position des sommets dans les 4e et 5e dimensions. Pour explorer pleinement sa structure, combinez les deux contrôles de vitesse : l'animation pour voir les transformations dans la 5e dimension, et la rotation pour changer votre perspective 3D. Cette combinaison révèle progressivement la complexité de sa structure géométrique complète.";
+                }
+            }
+            
+            description.textContent = texteDescription;
             console.log("Description mise à jour");
         }
         
@@ -278,11 +668,23 @@ class DimensionalApp {
             // Mettre à jour les contrôles
             if (this.controls) this.controls.update();
             
-            // Mettre à jour l'objet actuel
+            // Mettre à jour l'objet actuel avec les deux vitesses séparées
             if (!this.animationPaused) {
                 const currentObj = this.objects[this.currentDimension];
                 if (currentObj) {
-                    currentObj.update(elapsedTime * this.animationSpeed);
+                    // Pour les dimensions 4D et 5D, utiliser TOUJOURS les deux vitesses
+                    if (this.currentDimension >= 4) {
+                        // Applique l'animation hyperdimensionnelle
+                        currentObj.update(elapsedTime * this.animationSpeed);
+                        
+                        // Applique TOUJOURS la rotation 3D pour avoir un mouvement complet
+                        if (typeof currentObj.rotate === 'function') {
+                            currentObj.rotate(elapsedTime * this.rotationSpeed);
+                        } 
+                    } else {
+                        // Pour les dimensions 0-3, utiliser simplement la vitesse de rotation
+                        currentObj.update(elapsedTime * this.rotationSpeed);
+                    }
                 }
             }
             
@@ -300,13 +702,16 @@ class DimensionalApp {
         // Mettre à jour la détection mobile
         this.isMobile = this.detectMobile();
         
-        // Adapter la caméra
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
+        // Adapter le renderer avec la nouvelle méthode
+        this.updateRendererSize();
         
-        // Adapter le renderer
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(this.isMobile ? Math.min(window.devicePixelRatio, 1.5) : window.devicePixelRatio);
+        // Ajuster le FOV et la position de la caméra pour les petits écrans
+        const smallScreen = window.innerWidth <= 600;
+        if (this.camera) {
+            this.camera.fov = this.isMobile ? (smallScreen ? 90 : 85) : 75;
+            this.camera.position.z = this.isMobile ? (smallScreen ? 4 : 3.5) : 2.5;
+            this.camera.updateProjectionMatrix();
+        }
     }
 }
 

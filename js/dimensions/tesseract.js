@@ -128,17 +128,22 @@ class Tesseract {
     
     update(time) {
         if (this.object) {
-            // Rotation uniquement sur l'axe principal XW
+            // Mise à jour uniquement des rotations 4D
             this.rotationXY = 0;
             this.rotationXZ = 0;
-            this.rotationXW = time * 0.5; // Garde uniquement la rotation 4D principale
+            this.rotationXW = time * 0.5; // Animation 4D
             this.rotationYZ = 0;
             this.rotationYW = 0;
             this.rotationZW = 0;
             
             // Mettre à jour la projection
             this.updateProjection();
-            
+        }
+    }
+    
+    // Nouvelle méthode pour la rotation 3D uniquement
+    rotate(time) {
+        if (this.object) {
             // Rotation 3D uniquement sur l'axe Y
             this.object.rotation.y = time * 0.2;
         }
@@ -168,6 +173,6 @@ class Tesseract {
     }
     
     getDescription() {
-        return "Le tesseract (4D) est un hypercube en 4 dimensions. Sa projection 3D est mathématiquement exacte mais visuellement déroutante car notre cerveau n'est pas conçu pour interpréter les dimensions supérieures. Les 16 sommets et 32 arêtes semblent former deux cubes imbriqués et connectés par des arêtes supplémentaires, mais cette représentation est une simplification. La déformation que vous observez lors de la rotation est comparable à l'ombre déformée qu'un cube projette sur une feuille plate (2D) lorsqu'il tourne dans l'espace 3D. Nous ne pouvons voir qu'une \"ombre\" partielle du véritable objet 4D, car notre perception est limitée à 3 dimensions.";
+        return "Le tesseract (4D) est un hypercube en 4 dimensions. Sa projection 3D est mathématiquement exacte mais visuellement déroutante car notre cerveau n'est pas conçu pour interpréter les dimensions supérieures.\n\nLes 16 sommets et 32 arêtes semblent former deux cubes imbriqués et connectés par des arêtes supplémentaires. Cette représentation n'est pas une simplification arbitraire, mais la projection mathématique rigoureuse d'un objet 4D dans notre espace 3D.\n\nLa déformation que vous observez lors de la rotation peut être comparée à l'ombre d'un cube projetée sur un plan 2D : quand le cube tourne, son ombre se déforme de manière surprenante pour un habitant du plan. De même, ce que nous voyons du tesseract n'est qu'une \"ombre\" partielle du véritable objet 4D - les déformations révèlent sa structure intrinsèque.\n\nLa visualisation du tesseract nous montre comment les objets mathématiques transcendent notre intuition spatiale limitée à trois dimensions, tout en restant parfaitement cohérents dans les espaces de dimensions supérieures.";
     }
 }

@@ -1,20 +1,22 @@
+/* Base CSS */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'SF Pro Display', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     -webkit-tap-highlight-color: transparent;
 }
 
 :root {
-    --glass-background: rgba(255, 255, 255, 0.25);
-    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-background: rgba(255, 255, 255, 0.15);
+    --glass-border: rgba(255, 255, 255, 0.3);
     --text-color: #16213e;
     --button-background: rgba(22, 33, 62, 0.1);
-    --panel-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-    --panel-radius: 24px;
+    --panel-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08);
+    --panel-radius: 20px;
     --mobile-panel-radius: 16px;
     --transition-speed: 0.3s;
+    --grid-gap: 15px;
 }
 
 body {
@@ -23,82 +25,330 @@ body {
     overflow: hidden;
     height: 100vh;
     width: 100vw;
-    position: fixed; /* Empêche le rebond sur iOS */
-    touch-action: manipulation; /* Optimisé pour le tactile */
+    position: fixed;
+    touch-action: manipulation;
 }
 
-#scene-container {
-    position: fixed;
+/* Container principal de l'application */
+.app-container {
     width: 100%;
     height: 100%;
-    top: 0;
-    left: 0;
-    touch-action: none; /* Pour Three.js touch controls */
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box; /* S'assurer que padding est inclus dans la largeur/hauteur */
 }
 
-/* Style glassmorphique pour les panneaux */
+/* Grid pour les panneaux */
+.panel-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 1fr auto auto;
+    grid-gap: var(--grid-gap);
+    width: 100%;
+    max-width: 1400px;
+    height: calc(100% - 40px);
+    margin: 0 auto; /* Centrage horizontal */
+    position: relative; /* Pour établir un contexte d'empilement et de positionnement */
+}
+
+/* Placement des panneaux dans la grille */
+.preview-panel {
+    grid-column: 1 / span 3;
+    grid-row: 1;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.7s cubic-bezier(0.215, 0.61, 0.355, 1); /* Easing pour démarrer lentement et accélérer */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    padding: 0;
+    will-change: transform, border-radius, backdrop-filter;
+    transform-origin: center;
+}
+
+.preview-panel.expanded {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    transform-origin: center;
+    animation: panel-expand 0.7s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+.preview-panel.expanded.collapsing {
+    animation: panel-collapse 0.7s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+}
+
+@keyframes panel-expand {
+    0% {
+        transform: scale(0.98);
+        border-radius: var(--panel-radius);
+    }
+    70% {
+        transform: scale(1.02);
+        border-radius: 0;
+    }
+    100% {
+        transform: scale(1);
+        border-radius: 0;
+    }
+}
+
+@keyframes panel-collapse {
+    0% {
+        transform: scale(1);
+        border-radius: 0;
+    }
+    30% {
+        transform: scale(0.98);
+        border-radius: var(--panel-radius);
+    }
+    100% {
+        transform: scale(1);
+        border-radius: var(--panel-radius);
+    }
+}
+
+.preview-panel #scene-container {
+    transition: all 0.5s cubic-bezier(0.34, 0.95, 0.41, 1);
+}
+
+.preview-panel.expanded #scene-container {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: unset;
+    max-height: none;
+}
+
+#dimension-menu {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 200px;
+}
+
+#controls-panel {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 200px;
+}
+
+#info-panel {
+    grid-column: 3;
+    grid-row: 2;
+    min-height: 200px;
+    overflow-y: auto; /* Permettre le défilement vertical */
+    max-height: 200px;
+    transition: none; /* On désactive la transition par défaut pour la contrôler via JS */
+    transform-origin: center;
+    cursor: pointer;
+    position: relative; /* Use relative instead of absolute positioning by default */
+    z-index: 10; /* Ensure it's above other panels in normal state */
+    max-width: 400px;
+    width: 100%; 
+    box-sizing: border-box;
+    padding: 15px;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+#info-panel .scroll-content {
+    pointer-events: auto; /* Assurer que les événements de défilement fonctionnent */
+}
+
+#info-panel.scrollable {
+    cursor: auto;
+}
+
+#info-panel.expanded {
+    position: fixed; /* Fixed position when expanded */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80vw;
+    max-width: 800px;
+    height: auto;
+    max-height: 80vh;
+    z-index: 2000; /* Much higher z-index when expanded */
+    overflow-y: auto;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    opacity: 1;
+    padding: 20px;
+    margin: 0 auto;
+    cursor: auto; /* Curseur normal quand étendu */
+}
+
+#info-panel.expanding {
+    animation: info-panel-expand 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+#info-panel.collapsing {
+    animation: info-panel-collapse 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes info-panel-expand {
+     0%, 100% { opacity: 1; }  /* Animation vide pour compatibilité */
+}
+
+@keyframes info-panel-collapse {
+     0%, 100% { opacity: 1; }  /* Animation vide pour compatibilité */
+}
+
+/* Style glassmorphique modernisé */
 .glass-panel {
     background: var(--glass-background);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-radius: var(--panel-radius);
     border: 1px solid var(--glass-border);
     box-shadow: var(--panel-shadow);
     padding: 20px;
     color: var(--text-color);
-    position: fixed;
-    z-index: 10;
-    transition: transform var(--transition-speed) ease, 
-                box-shadow var(--transition-speed) ease,
-                background-color var(--transition-speed) ease;
-    animation: float 8s infinite ease-in-out;
-    max-width: 90vw; /* Empêcher débordement sur mobile */
+    transition: transform var(--transition-speed) cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow var(--transition-speed) ease;
 }
 
-.glass-panel:hover {
+/* Conteneur de scène Three.js */
+#scene-container {
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    position: relative; /* Pour permettre la détection de clic correct */
+    aspect-ratio: 1; /* Force un ratio 1:1 pour éviter la déformation */
+    margin: auto; /* Centre le conteneur si aspect-ratio crée des marges */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Empêche tout débordement */
+}
+
+#scene-container canvas {
+    /* Empêcher le redimensionnement automatique du canvas qui cause du flou */
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain; /* Conserve les proportions */
+}
+
+/* Suppression des animations entrée/sortie qui causent les saccades */
+@keyframes expand-panel {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Suppression des classes d'animation qui causent les problèmes */
+.preview-panel.entering-fullscreen,
+.preview-panel.exiting-fullscreen {
+    animation: none;
+}
+
+@keyframes enter-fullscreen {
+    0%, 100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes exit-fullscreen {
+    0%, 100% {
+        transform: scale(1);
+    }
+}
+
+.expand-button {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.expand-button:hover {
+    transform: scale(1.1);
     background: rgba(255, 255, 255, 0.35);
-    box-shadow: 0 12px 42px 0 rgba(0, 0, 0, 0.12);
-    transform: translateY(-5px);
+}
+
+.expand-button svg {
+    width: 24px;
+    height: 24px;
+    fill: var(--text-color);
+}
+
+.expand-icon {
+    display: block;
+}
+
+.collapse-icon {
+    display: none;
+}
+
+.preview-panel.expanded .expand-icon {
+    display: none;
+}
+
+.preview-panel.expanded .collapse-icon {
+    display: block;
 }
 
 /* Menu des dimensions */
-#dimension-menu {
-    top: 20px;
-    left: 20px;
-    width: 200px;
-    perspective: 1000px;
-    animation-delay: 0s;
-}
-
 #dimension-menu h2 {
     margin-bottom: 15px;
-    font-weight: 400;
-    letter-spacing: 1px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
     text-align: center;
 }
 
 #dimension-menu ul {
     list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 #dimension-menu li {
     padding: 12px 18px;
-    margin-bottom: 12px;
     border-radius: 16px;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    z-index: 1;
     background: rgba(255, 255, 255, 0.1);
-    transform-style: preserve-3d;
-    transform: translateZ(0px);
+    text-align: center;
 }
 
 #dimension-menu li:hover, #dimension-menu li:active {
     background: rgba(255, 255, 255, 0.8);
-    transform: translateY(-8px) translateZ(20px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1), 
-                0 8px 12px rgba(0, 0, 0, 0.05);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     color: #000;
     font-weight: 500;
 }
@@ -106,299 +356,408 @@ body {
 #dimension-menu li.active {
     background: rgba(255, 255, 255, 0.9);
     font-weight: bold;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    transform: translateY(-6px) translateZ(10px);
-}
-
-#dimension-menu li::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 16px;
-    background: transparent;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-    opacity: 0;
-    transition: opacity 0.4s ease;
-    z-index: -1;
-}
-
-#dimension-menu li:hover::after {
-    opacity: 1;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-3px);
 }
 
 /* Panneau de contrôles */
-#controls-panel {
-    top: 20px;
-    right: 20px;
-    width: 250px;
-    animation-delay: 2s;
-}
-
 #controls-panel h2 {
     margin-bottom: 15px;
-    font-weight: 400;
-    letter-spacing: 1px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
     text-align: center;
 }
 
 .control-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .control-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     font-size: 14px;
+    font-weight: 500;
 }
 
+/* Style amélioré pour le slider de vitesse */
 .control-group input[type="range"] {
-    width: 100%;
-    background: rgba(22, 33, 62, 0.1);
-    border-radius: 10px;
-    height: 8px;
     -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--text-color) 0%, var(--text-color) 50%, rgba(22, 33, 62, 0.1) 50%);
+    border-radius: 10px;
+    margin: 15px 0;
+    cursor: pointer;
+    transition: height 0.2s ease-in-out;
+}
+
+.control-group input[type="range"]:hover {
+    height: 6px;
 }
 
 .control-group input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    background: #ffffff;
+    border: 2px solid var(--text-color);
     border-radius: 50%;
-    background: var(--text-color);
     cursor: pointer;
-    border: 2px solid white;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .control-group input[type="range"]::-webkit-slider-thumb:hover {
     transform: scale(1.2);
 }
 
-.control-group button {
-    background: var(--button-background);
-    border: none;
-    color: var(--text-color);
-    padding: 12px 18px;
-    border-radius: 16px;
-    cursor: pointer;
-    margin-right: 10px;
-    margin-bottom: 10px; /* Pour le mode portrait sur mobile */
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    font-weight: 500;
+.control-group input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.3);
+    background: var(--text-color);
+    border-color: #ffffff;
+}
+
+.control-group .slider-container {
     position: relative;
-    transform-style: preserve-3d;
-    min-width: 100px; /* Largeur minimale fixe */
-    text-align: center; /* Centrer le texte */
-    display: inline-block; /* Assure que les boutons restent en ligne */
+    padding-bottom: 15px;
 }
 
-/* Classe spécifique pour le bouton toggle d'animation */
-#toggle-animation {
-    width: 100px; /* Largeur fixe pour éviter le saut */
-}
-
-/* Panneau d'informations */
-#info-panel {
-    bottom: 20px;
-    left: 20px;
-    max-width: 400px;
-    animation-delay: 4s;
-    transition: max-height 0.3s ease;
-}
-
-#info-panel h2 {
-    margin-bottom: 10px;
-    font-weight: 400;
-    letter-spacing: 1px;
+.control-group .speed-indicator {
+    width: 100%;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    font-size: 0.65rem;
+    color: var(--text-color);
+    opacity: 0.6;
+    margin-top: 5px;
 }
 
-#info-panel p {
-    line-height: 1.6;
-    font-size: 14px;
-    max-height: 80px;
-    overflow: hidden;
-    transition: max-height 0.3s ease;
+.control-group .speed-indicator span {
+    position: relative;
+    width: 2px;
+    height: 2px;
 }
 
-#info-panel.expanded p {
-    max-height: 500px;
+.control-group .speed-indicator span::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 5px;
+    background-color: var(--text-color);
+    opacity: 0.3;
 }
 
-.toggle-info {
-    cursor: pointer;
-    font-size: 1.2em;
-    transition: transform 0.3s ease;
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-    text-align: center;
+/* Groupe de boutons */
+.control-group:last-child {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.control-group button {
     background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    margin-left: 10px;
+    border: none;
+    color: var(--text-color);
+    padding: 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    margin: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-weight: 500;
+    text-align: center;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-#info-panel.expanded .toggle-info {
-    transform: rotate(180deg);
+.control-group button:hover {
+    background: rgba(255, 255, 255, 0.7);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
 }
 
-/* Animation pour effet de profondeur 3D */
-@keyframes float {
-    0% {
-        transform: translateZ(0px);
-    }
-    50% {
-        transform: translateZ(8px);
-    }
-    100% {
-        transform: translateZ(0px);
-    }
+/* Overlay pour quand le panneau d'info est en plein écran */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1999; /* Just below expanded panel */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s cubic-bezier(0.215, 0.61, 0.355, 1);
+    will-change: opacity;
 }
 
-/* Media queries pour la responsivité */
+.overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
 
-/* Tablettes et petits écrans */
-@media screen and (max-width: 768px) {
-    .glass-panel {
-        border-radius: var(--mobile-panel-radius);
-        padding: 15px;
+/* Nouvelle classe pour faire disparaître l'overlay en douceur */
+.overlay.fading {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.7s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* Suppression du contrôle de l'œil qui n'est plus nécessaire */
+#eye-control {
+    display: none; /* Cacher le bouton plutôt que de le supprimer du DOM */
+}
+
+/* Supprimer le code de cachage des panneaux qui n'est plus nécessaire */
+body.panels-hidden .glass-panel:not(.preview-panel.expanded) {
+    /* Désactivation du comportement de cachage */
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+/* Responsive design */
+@media (max-width: 980px) {
+    .panel-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr auto auto;
+        height: auto;
+        width: 100%; /* Garantir la largeur complète */
+        grid-gap: 10px; /* Réduire l'écart pour économiser l'espace */
+    }
+    
+    .preview-panel {
+        grid-column: 1 / span 2;
+        grid-row: 1;
+        height: 50vh;
+        min-height: 200px; /* Hauteur minimale pour éviter un affichage trop petit */
     }
     
     #dimension-menu {
-        width: 180px;
+        grid-column: 1;
+        grid-row: 2;
+        min-height: 180px;
     }
     
     #controls-panel {
-        width: 200px;
+        grid-column: 2;
+        grid-row: 2;
+        min-height: 180px;
     }
     
     #info-panel {
-        max-width: 350px;
+        grid-column: 1 / span 2;
+        grid-row: 3;
+        width: 100%; /* Utiliser toute la largeur */
+        max-width: 100%; /* S'assurer qu'il ne dépasse pas */
+        position: relative; /* Ensure it's relative in grid layout */
+        z-index: 10;
     }
 }
 
-/* Smartphones en mode portrait */
-@media screen and (max-width: 480px) {
-    :root {
-        --panel-radius: 14px;
+@media (max-width: 600px) {
+    .app-container {
+        padding: 10px;
+        height: 100vh; /* Utiliser toute la hauteur */
+        overflow: hidden; /* Éviter le défilement de la page */
     }
     
-    /* Réorganisation pour écran mobile */
+    .panel-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+        grid-gap: 8px; /* Écart encore plus réduit */
+        height: calc(100% - 10px); /* Presque toute la hauteur */
+        margin: 0; /* Pas de marge externe */
+    }
+    
+    .preview-panel {
+        grid-column: 1;
+        grid-row: 1;
+        height: 40vh;
+        min-height: 150px; /* Hauteur minimum adaptée */
+        border-radius: var(--mobile-panel-radius);
+    }
+    
     #dimension-menu {
-        top: 10px;
-        left: 10px;
-        width: calc(100% - 20px);
-        max-height: 200px;
-        overflow-y: auto;
-        animation: none;
+        grid-column: 1;
+        grid-row: 2;
+        min-height: unset;
+        padding: 12px; /* Padding réduit */
+    }
+    
+    #controls-panel {
+        grid-column: 1;
+        grid-row: 3;
+        min-height: unset;
+        padding: 12px; /* Padding réduit */
+    }
+    
+    #info-panel {
+        grid-column: 1;
+        grid-row: 4;
+        min-height: unset;
+        max-height: 150px;
+        padding: 12px; /* Padding réduit */
+        width: 100%; /* Largeur complète */
+        margin-bottom: 0; /* Pas de marge en bas */
+        box-sizing: border-box;
+        position: relative; /* Ensure it's relative in grid layout */
+        z-index: 10;
     }
     
     #dimension-menu ul {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 6px;
+        padding: 0;
     }
     
     #dimension-menu li {
-        margin: 5px;
-        padding: 8px 12px;
-        border-radius: 12px;
-        font-size: 0.9em;
-        width: calc(50% - 10px);
-        text-align: center;
-    }
-    
-    #controls-panel {
-        bottom: 10px;
-        right: 10px;
-        top: auto;
-        width: calc(50% - 15px);
-        animation: none;
+        margin: 0;
+        padding: 8px 5px;
+        font-size: 0.85em;
+        white-space: nowrap;
     }
     
     .control-group {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    
+    .control-group:last-child {
+        margin-top: 12px;
+        gap: 6px;
     }
     
     .control-group button {
-        flex: 0 1 auto; /* Ne pas forcer les boutons à prendre toute la largeur */
-        margin-right: 5px;
-        box-sizing: border-box;
-        min-width: 0; /* Annuler la min-width sur mobile */
-        width: auto; /* Laisser la largeur s'adapter au contenu */
-        display: inline-block; /* Garder les boutons sur la même ligne */
-    }
-    
-    #toggle-animation,
-    #reset-view {
-        width: auto; /* Auto width pour s'adapter au contenu */
-    }
-    
-    #info-panel {
-        bottom: 10px;
-        left: 10px;
-        width: calc(50% - 15px);
-        max-width: none;
-        max-height: 150px;
-        overflow-y: auto;
-        animation: none;
-    }
-    
-    #info-panel h2 {
-        font-size: 1em;
-    }
-    
-    #info-panel p {
+        padding: 8px;
+        border-radius: 12px;
         font-size: 0.9em;
-        line-height: 1.4;
     }
     
-    /* Désactive les animations complexes */
-    .glass-panel:hover {
-        transform: none;
+    #eye-control {
+        width: 36px;
+        height: 36px;
+        bottom: 10px;
+        right: 10px;
     }
     
-    /* Ajustements pour les contrôles tactiles */
-    #dimension-menu li:hover {
-        transform: none;
-    }
-}
-
-/* Smartphones en mode paysage */
-@media screen and (max-height: 480px) {
-    #dimension-menu {
-        top: 5px;
-        left: 5px;
-        padding: 10px;
+    .glass-panel {
+        border-radius: var(--mobile-panel-radius);
+        padding: 12px;
+        margin: 0;
     }
     
-    #dimension-menu h2 {
+    #scene-container {
+        aspect-ratio: 1;
+        max-height: 100%;
+        width: 100% !important;
+        height: auto !important;
+    }
+    
+    #info-panel.expanded {
+        width: 95vw !important;
+        height: auto !important;
+        max-height: 80vh !important;
+        padding: 15px !important;
+        overflow-y: auto;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    h2 {
+        font-size: 1.1em;
         margin-bottom: 8px;
     }
     
-    #dimension-menu li {
-        margin-bottom: 5px;
-        padding: 6px 12px;
+    p {
+        font-size: 0.85em;
+        line-height: 1.5;
     }
     
-    #controls-panel {
-        top: 5px;
-        right: 5px;
+    @supports (-webkit-touch-callout: none) {
+        .app-container {
+            height: -webkit-fill-available;
+        }
+    }
+}
+
+@media (max-width: 375px) {
+    .app-container {
+        padding: 6px;
+    }
+    
+    .panel-grid {
+        grid-gap: 6px;
+    }
+    
+    #dimension-menu li {
+        padding: 6px 3px;
+        font-size: 0.8em;
+    }
+    
+    .glass-panel {
         padding: 10px;
+    }
+    
+    .control-group button {
+        padding: 6px;
+        font-size: 0.85em;
     }
     
     #info-panel {
-        bottom: 5px;
-        left: 5px;
-        padding: 10px;
+        max-height: 120px;
     }
+    
+    h2 {
+        font-size: 1em;
+        margin-bottom: 6px;
+    }
+}
+
+@media (max-height: 500px) and (min-width: 600px) {
+    .panel-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-rows: 1fr auto;
+        height: calc(100% - 20px);
+    }
+    
+    .preview-panel {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        height: 100%;
+    }
+    
+    #dimension-menu {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    
+    #controls-panel {
+        grid-column: 3;
+        grid-row: 1;
+    }
+    
+    #info-panel {
+        grid-column: 2 / span 2;
+        grid-row: 2;
+        max-height: 120px;
+    }
+}
+
+/* Amélioration du style texte pour meilleure lisibilité */
+p {
+    width: 100%;
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
 }
