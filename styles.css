@@ -1,0 +1,404 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --glass-background: rgba(255, 255, 255, 0.25);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --text-color: #16213e;
+    --button-background: rgba(22, 33, 62, 0.1);
+    --panel-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    --panel-radius: 24px;
+    --mobile-panel-radius: 16px;
+    --transition-speed: 0.3s;
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa, #e8edf2, #dce6f0);
+    color: var(--text-color);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    position: fixed; /* Empêche le rebond sur iOS */
+    touch-action: manipulation; /* Optimisé pour le tactile */
+}
+
+#scene-container {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    touch-action: none; /* Pour Three.js touch controls */
+}
+
+/* Style glassmorphique pour les panneaux */
+.glass-panel {
+    background: var(--glass-background);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--panel-radius);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--panel-shadow);
+    padding: 20px;
+    color: var(--text-color);
+    position: fixed;
+    z-index: 10;
+    transition: transform var(--transition-speed) ease, 
+                box-shadow var(--transition-speed) ease,
+                background-color var(--transition-speed) ease;
+    animation: float 8s infinite ease-in-out;
+    max-width: 90vw; /* Empêcher débordement sur mobile */
+}
+
+.glass-panel:hover {
+    background: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 12px 42px 0 rgba(0, 0, 0, 0.12);
+    transform: translateY(-5px);
+}
+
+/* Menu des dimensions */
+#dimension-menu {
+    top: 20px;
+    left: 20px;
+    width: 200px;
+    perspective: 1000px;
+    animation-delay: 0s;
+}
+
+#dimension-menu h2 {
+    margin-bottom: 15px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+#dimension-menu ul {
+    list-style: none;
+}
+
+#dimension-menu li {
+    padding: 12px 18px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.1);
+    transform-style: preserve-3d;
+    transform: translateZ(0px);
+}
+
+#dimension-menu li:hover, #dimension-menu li:active {
+    background: rgba(255, 255, 255, 0.8);
+    transform: translateY(-8px) translateZ(20px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1), 
+                0 8px 12px rgba(0, 0, 0, 0.05);
+    color: #000;
+    font-weight: 500;
+}
+
+#dimension-menu li.active {
+    background: rgba(255, 255, 255, 0.9);
+    font-weight: bold;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-6px) translateZ(10px);
+}
+
+#dimension-menu li::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    background: transparent;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: -1;
+}
+
+#dimension-menu li:hover::after {
+    opacity: 1;
+}
+
+/* Panneau de contrôles */
+#controls-panel {
+    top: 20px;
+    right: 20px;
+    width: 250px;
+    animation-delay: 2s;
+}
+
+#controls-panel h2 {
+    margin-bottom: 15px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+.control-group {
+    margin-bottom: 15px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.control-group input[type="range"] {
+    width: 100%;
+    background: rgba(22, 33, 62, 0.1);
+    border-radius: 10px;
+    height: 8px;
+    -webkit-appearance: none;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--text-color);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.control-group button {
+    background: var(--button-background);
+    border: none;
+    color: var(--text-color);
+    padding: 12px 18px;
+    border-radius: 16px;
+    cursor: pointer;
+    margin-right: 10px;
+    margin-bottom: 10px; /* Pour le mode portrait sur mobile */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-weight: 500;
+    position: relative;
+    transform-style: preserve-3d;
+    min-width: 100px; /* Largeur minimale fixe */
+    text-align: center; /* Centrer le texte */
+    display: inline-block; /* Assure que les boutons restent en ligne */
+}
+
+/* Classe spécifique pour le bouton toggle d'animation */
+#toggle-animation {
+    width: 100px; /* Largeur fixe pour éviter le saut */
+}
+
+/* Panneau d'informations */
+#info-panel {
+    bottom: 20px;
+    left: 20px;
+    max-width: 400px;
+    animation-delay: 4s;
+    transition: max-height 0.3s ease;
+}
+
+#info-panel h2 {
+    margin-bottom: 10px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#info-panel p {
+    line-height: 1.6;
+    font-size: 14px;
+    max-height: 80px;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+#info-panel.expanded p {
+    max-height: 500px;
+}
+
+.toggle-info {
+    cursor: pointer;
+    font-size: 1.2em;
+    transition: transform 0.3s ease;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    margin-left: 10px;
+}
+
+#info-panel.expanded .toggle-info {
+    transform: rotate(180deg);
+}
+
+/* Animation pour effet de profondeur 3D */
+@keyframes float {
+    0% {
+        transform: translateZ(0px);
+    }
+    50% {
+        transform: translateZ(8px);
+    }
+    100% {
+        transform: translateZ(0px);
+    }
+}
+
+/* Media queries pour la responsivité */
+
+/* Tablettes et petits écrans */
+@media screen and (max-width: 768px) {
+    .glass-panel {
+        border-radius: var(--mobile-panel-radius);
+        padding: 15px;
+    }
+    
+    #dimension-menu {
+        width: 180px;
+    }
+    
+    #controls-panel {
+        width: 200px;
+    }
+    
+    #info-panel {
+        max-width: 350px;
+    }
+}
+
+/* Smartphones en mode portrait */
+@media screen and (max-width: 480px) {
+    :root {
+        --panel-radius: 14px;
+    }
+    
+    /* Réorganisation pour écran mobile */
+    #dimension-menu {
+        top: 10px;
+        left: 10px;
+        width: calc(100% - 20px);
+        max-height: 200px;
+        overflow-y: auto;
+        animation: none;
+    }
+    
+    #dimension-menu ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    #dimension-menu li {
+        margin: 5px;
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-size: 0.9em;
+        width: calc(50% - 10px);
+        text-align: center;
+    }
+    
+    #controls-panel {
+        bottom: 10px;
+        right: 10px;
+        top: auto;
+        width: calc(50% - 15px);
+        animation: none;
+    }
+    
+    .control-group {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    
+    .control-group button {
+        flex: 0 1 auto; /* Ne pas forcer les boutons à prendre toute la largeur */
+        margin-right: 5px;
+        box-sizing: border-box;
+        min-width: 0; /* Annuler la min-width sur mobile */
+        width: auto; /* Laisser la largeur s'adapter au contenu */
+        display: inline-block; /* Garder les boutons sur la même ligne */
+    }
+    
+    #toggle-animation,
+    #reset-view {
+        width: auto; /* Auto width pour s'adapter au contenu */
+    }
+    
+    #info-panel {
+        bottom: 10px;
+        left: 10px;
+        width: calc(50% - 15px);
+        max-width: none;
+        max-height: 150px;
+        overflow-y: auto;
+        animation: none;
+    }
+    
+    #info-panel h2 {
+        font-size: 1em;
+    }
+    
+    #info-panel p {
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+    
+    /* Désactive les animations complexes */
+    .glass-panel:hover {
+        transform: none;
+    }
+    
+    /* Ajustements pour les contrôles tactiles */
+    #dimension-menu li:hover {
+        transform: none;
+    }
+}
+
+/* Smartphones en mode paysage */
+@media screen and (max-height: 480px) {
+    #dimension-menu {
+        top: 5px;
+        left: 5px;
+        padding: 10px;
+    }
+    
+    #dimension-menu h2 {
+        margin-bottom: 8px;
+    }
+    
+    #dimension-menu li {
+        margin-bottom: 5px;
+        padding: 6px 12px;
+    }
+    
+    #controls-panel {
+        top: 5px;
+        right: 5px;
+        padding: 10px;
+    }
+    
+    #info-panel {
+        bottom: 5px;
+        left: 5px;
+        padding: 10px;
+    }
+}
