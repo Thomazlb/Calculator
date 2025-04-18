@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calculatrice Végétale</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #5c785c; /* Fond plus clair et plus doux */
+            font-family: 'Arial', sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .calculator {
+            background: #243524;
+            width: 100%;
+            max-width: 340px;
+            margin: 10px;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: auto; /* Supprime le ratio fixe */
+            min-height: 0; /* Permet à la calculatrice de s'adapter à son contenu */
+            display: flex;
+            flex-direction: column;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+            transition: 
+                transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                max-width 0.8s cubic-bezier(0.4, 0.0, 0.2, 1),
+                max-height 0.8s cubic-bezier(0.4, 0.0, 0.2, 1),
+                height 0.8s cubic-bezier(0.4, 0.0, 0.2, 1),
+                padding 0.8s cubic-bezier(0.4, 0.0, 0.2, 1),
+                background 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+            overflow: hidden;
+            height: auto;
+            min-height: auto;
+            will-change: transform, max-width;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            -webkit-perspective: 1000;
+            perspective: 1000;
+            transform: translateZ(0);
+            transition: max-width 0.3s ease-out;
+        }
+
+        .calculator.pro-active {
+            max-width: 460px;
+        }
+
+        .calculator::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 60px;
+            height: 60px;
+            background: #4a764a;
+            border-radius: 50%;
+            opacity: 0.2;
+        }
+
+        .display {
+            background: #2d432d; /* Même couleur que les boutons */
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: right;
+            font-size: min(2.2em, 8vw);
+            color: #e0ffe0;
+            position: relative;
+            overflow: hidden;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), inset 0 -1px 2px rgba(255, 255, 255, 0.1);
+            -webkit-user-select: text;
+            user-select: text;
+            word-wrap: break-word;
+            word-break: break-all;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: flex-end;
+            overflow-x: auto;
+        }
+
+        .display #current {
+            max-width: 100%;
+            overflow-x: auto;
+            white-space: nowrap;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+
+        .display #current::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .display #history {
+            font-size: 0.6em;
+            opacity: 0.7;
+            min-height: 1.2em;
+            margin-bottom: 5px;
+        }
+
+        .buttons {
+            display: grid;
+            gap: 12px;
+            padding: 0;
+            grid-template-columns: repeat(4, 1fr);
+            transform-origin: center center;
+            transition: 
+                opacity 0.6s cubic-bezier(0.4, 0.0, 0.2, 1),
+                transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                gap 0.8s cubic-bezier(0.4, 0.0, 0.2, 1),
+                grid-template-columns 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+            will-change: opacity, transform, grid-template-columns;
+            -webkit-transform: translateZ(0);
+            transform: translateZ(0);
+            transition: grid-template-columns 0.3s ease-out;
+            opacity: 1;
+        }
+
+        .buttons.pro-mode {
+            grid-template-columns: repeat(5, 1fr);
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            flex: 0; /* Empêche l'expansion du conteneur */
+            height: auto;
+        }
+
+        .buttons.fade-out {
+            opacity: 0;
+            transform: scale(0.98) translateY(10px);
+            transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        .buttons.fade-in {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .buttons.fade-out button {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        .buttons.fade-in button {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        button, .pro-mode button {
+            height: 60px;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.4em;
+            cursor: pointer;
+            background: linear-gradient(to bottom, #324d32, #2d432d);
+            color: #ffffff;
+            transition: transform 0.12s cubic-bezier(0.4, 0.0, 0.2, 1),
+                        box-shadow 0.12s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 
+                0 6px 0 #1a291a,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(0);
+            transition: 
+                transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+                opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            will-change: transform, opacity;
+            contain: content;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+        }
+
+        button:hover {
+            transform: translateY(0);
+            box-shadow: 
+                0 6px 0 #1a291a,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        button:active, .pro-mode button:active,
+        button.pressed, .pro-mode button.pressed {
+            transform: translateY(6px);
+            background: linear-gradient(to bottom, #324d32, #2d432d);
+            box-shadow: 
+                0 0 0 #1a291a,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        button.operator {
+            background: linear-gradient(to bottom, #4f7f4f, #4a764a);
+            box-shadow: 
+                0 6px 0 #2d432d,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        button.operator:hover {
+            background: linear-gradient(to bottom, #4f7f4f, #4a764a);
+        }
+
+        button.operator:active {
+            transform: translateY(6px);
+            background: linear-gradient(to bottom, #4f7f4f, #4a764a);
+            box-shadow: 
+                0 0 0 #2d432d,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        button.equals {
+            background: linear-gradient(to bottom, #5c8c5c, #568656);
+            color: white;
+            grid-column: span 2;
+            box-shadow: 
+                0 6px 0 #2d432d,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        button.equals:hover {
+            background: linear-gradient(to bottom, #5c8c5c, #568656);
+        }
+
+        button.equals:active {
+            transform: translateY(6px);
+            background: linear-gradient(to bottom, #5c8c5c, #568656);
+            box-shadow: 
+                0 0 0 #2d432d,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        @keyframes numberPop {
+            0% {
+                opacity: 0;
+                transform: scale(1.2);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .display span.new-digit {
+            display: inline-block;
+            animation: numberPop 0.2s ease-out;
+        }
+
+        @media (max-width: 480px) {
+            .calculator {
+                border-radius: 15px;
+                padding: 20px;
+            }
+
+            button {
+                border-radius: 8px;
+                height: 50px;
+                font-size: 1.2em;
+            }
+
+            .display {
+                margin-bottom: 20px;
+                height: 70px;
+            }
+        }
+
+        @media (hover: none) {
+            button:hover {
+                background: linear-gradient(to bottom, #324d32, #2d432d);
+                transform: translateY(0);
+                box-shadow: 
+                    0 6px 0 #1a291a,
+                    0 7px 8px rgba(0, 0, 0, 0.4),
+                    inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                    inset 0 2px 2px rgba(255, 255, 255, 0.2);
+            }
+
+            button:active {
+                transform: translateY(6px) !important;
+                background: linear-gradient(to bottom, #324d32, #2d432d) !important;
+                box-shadow: 
+                    0 0 0 #1a291a,
+                    0 0 0 rgba(0, 0, 0, 0.4),
+                    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+            }
+
+            button.operator:active {
+                transform: translateY(6px) !important;
+                background: linear-gradient(to bottom, #4f7f4f, #4a764a) !important;
+            }
+
+            button.equals:active {
+                transform: translateY(6px) !important;
+                background: linear-gradient(to bottom, #5c8c5c, #568656) !important;
+            }
+        }
+
+        /* Ajout des styles pour le bouton PRO */
+        button.pro-mode {
+            background: linear-gradient(to bottom, #666666, #4d4d4d);
+            color: #ffffff;
+            font-size: 1.6em;
+            box-shadow: 
+                0 6px 0 #333333,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        button.pro-mode:hover {
+            background: linear-gradient(to bottom, #737373, #595959);
+        }
+
+        button.pro-mode:active {
+            transform: translateY(6px);
+            background: linear-gradient(to bottom, #666666, #4d4d4d);
+        }
+
+        /* Styles pour l'animation de transformation */
+        .calculator.pro-active {
+            transform: scale(1.02) translateY(5px);
+            background: #1a1a1a;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1),
+                        max-width 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* Animation pour faire apparaître/disparaître les boutons */
+        .buttons button {
+            transition: all 0.3s ease;
+        }
+
+        .buttons.pro-mode button {
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        .buttons.pro-mode button.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Styles spécifiques pour le mode PRO */
+        .calculator.pro-active {
+            transform: scale(1.05);
+            background: #243524;  /* Même vert que le mode basic */
+            transition: all 0.5s ease;
+            max-width: 400px;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 25px; /* Espacement entre l'écran et les boutons */
+        }
+
+        .pro-mode button.function {
+            font-size: 1.2em;
+        }
+
+        .pro-mode button.constant {
+            font-size: 1.4em;
+        }
+
+        .pro-mode button.equals {
+            grid-column: span 1;
+        }
+
+        /* Ajustements pour le mode Pro */
+        .calculator.pro-active {
+            transform: scale(1.02);
+            max-width: 460px;
+            padding: 30px;
+        }
+
+        /* Ajustements responsifs */
+        @media (max-width: 480px) {
+            button, .pro-mode button {
+                height: 50px;
+                font-size: 1.2em;
+                border-radius: 8px;
+            }
+        }
+
+        /* Supprimer tous les styles redondants pour le mode Pro */
+        .pro-mode button {
+            /* Hérite des styles de base de button */
+        }
+
+        /* Animation pour le mode pro */
+        .buttons.pro-mode button {
+            opacity: 1;
+            transform: translateY(0);
+            transition: 
+                transform 0.12s cubic-bezier(0.4, 0.0, 0.2, 1),
+                box-shadow 0.12s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* Animation d'apparition des boutons en mode pro */
+        .buttons.pro-mode.initializing button {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+
+        /* Uniformisation du style des boutons pour les deux modes */
+        button, .pro-mode button {
+            height: 60px;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.4em;
+            cursor: pointer;
+            background: linear-gradient(to bottom, #324d32, #2d432d);
+            color: #ffffff;
+            transition: transform 0.12s cubic-bezier(0.4, 0.0, 0.2, 1),
+                        box-shadow 0.12s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 
+                0 6px 0 #1a291a,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(0);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        /* Style unifié pour l'état actif des boutons */
+        button:active, 
+        .pro-mode button:active,
+        button.pressed,
+        .pro-mode button.pressed {
+            transform: translateY(6px);
+            box-shadow: 
+                0 0 0 #1a291a,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Suppression des styles redondants */
+        .pro-mode button {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Animation d'apparition uniquement pendant l'initialisation */
+        .buttons.pro-mode.initializing button {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+        }
+
+        .buttons.pro-mode:not(.initializing) button {
+            transition: 
+                transform 0.12s cubic-bezier(0.4, 0.0, 0.2, 1),
+                box-shadow 0.12s cubic-bezier(0.4, 0.0, 0.2, 1),
+                opacity 0.2s ease-out;
+        }
+
+        /* Correction pour le mode Pro */
+        .pro-mode button:not(.initializing) {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Styles spécifiques maintenus */
+        .pro-mode button.function {
+            font-size: 1.2em;
+            background: linear-gradient(to bottom, #324d32, #2d432d);
+        }
+
+        .pro-mode button.operator {
+            background: linear-gradient(to bottom, #4f7f4f, #4a764a);
+        }
+
+        .pro-mode button.equals {
+            background: linear-gradient(to bottom, #5c8c5c, #568656);
+            grid-column: span 1;
+        }
+
+        /* Style de base unifié pour tous les boutons */
+        button, .pro-mode button {
+            height: 60px;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.4em;
+            cursor: pointer;
+            background: linear-gradient(to bottom, #324d32, #2d432d);
+            color: #ffffff;
+            box-shadow: 
+                0 6px 0 #1a291a,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(0);
+            will-change: transform, box-shadow;
+            transition: transform 0.12s cubic-bezier(0.4, 0.0, 0.2, 1),
+                        box-shadow 0.12s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* Style unifié pour l'état actif/pressé */
+        button:active,
+        .pro-mode button:active,
+        button.pressed,
+        .pro-mode button.pressed {
+            transform: translateY(6px);
+            box-shadow: 
+                0 0 0 #1a291a,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animation d'apparition uniquement pour le changement de mode */
+        .buttons.pro-mode.initializing button {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), 
+                        transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* Suppression des transitions conflictuelles */
+        .pro-mode button {
+            transition: transform 0.12s cubic-bezier(0.4, 0.0, 0.2, 1),
+                       box-shadow 0.12s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* Style spécifique pour le bouton mode */
+        button.pro-mode {
+            background: linear-gradient(to bottom, #666666, #4d4d4d);
+            color: #ffffff;
+            font-size: 1.6em;
+            box-shadow: 
+                0 6px 0 #333333,
+                0 7px 8px rgba(0, 0, 0, 0.4),
+                inset 0 -2px 2px rgba(0, 0, 0, 0.3),
+                inset 0 2px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        button.pro-mode:hover {
+            background: linear-gradient(to bottom, #737373, #595959);
+        }
+
+        button.pro-mode:active {
+            background: linear-gradient(to bottom, #666666, #4d4d4d);
+            box-shadow: 
+                0 0 0 #333333,
+                0 0 0 rgba(0, 0, 0, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+                inset 0 1px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        .back-arrow::before {
+            content: '←';
+            font-family: Arial, sans-serif;
+            font-size: 1.8em;
+            font-weight: 100;
+        }
+        
+        /* Définition de l'icône de retour minimaliste */
+        .back-arrow {
+            font-family: Arial, sans-serif;
+            font-size: 1.8em;
+            font-weight: 100;
+        }
+
+        /* Animation des boutons individuels */
+        @keyframes buttonAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.9);
+            }
+            60% {
+                transform: translateY(-2px) scale(1.02);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes modeTransition {
+            0% {
+                transform: scale(1) translateY(0);
+            }
+            50% {
+                transform: scale(1.04) translateY(-5px);
+            }
+            100% {
+                transform: scale(1.02) translateY(5px);
+            }
+        }
+
+        .calculator.transitioning {
+            animation: modeTransition 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes buttonIn {
+            from { opacity: 0; transform: translateY(15px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes buttonOut {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(-15px) scale(0.95); }
+        }
+
+        .buttons button {
+            /* ...existing properties... */
+            backface-visibility: hidden;
+            will-change: transform, opacity, filter;
+        }
+
+        .buttons.transitioning {
+            pointer-events: none;
+        }
+
+        .buttons.transitioning button {
+            transition: none !important;
+        }
+    </style>
+</head>
+<body>
+    <audio id="inclick" preload="auto" src="inclick.mp3"></audio>
+    <audio id="outclick" preload="auto" src="outclick.mp3"></audio>
+    <div class="calculator">
+        <div class="display" id="display">
+            <div class="history" id="history"></div>
+            <div class="current" id="current">0</div>
+        </div>
+        <div class="buttons">
+            <button data-action="clear">C</button>
+            <button data-action="operator" data-value="/">/</button>
+            <button data-action="operator" data-value="*">×</button>
+            <button data-action="delete">←</button>
+            
+            <button data-action="number" data-value="7">7</button>
+            <button data-action="number" data-value="8">8</button>
+            <button data-action="number" data-value="9">9</button>
+            <button data-action="operator" data-value="-" class="operator">-</button>
+            
+            <button data-action="number" data-value="4">4</button>
+            <button data-action="number" data-value="5">5</button>
+            <button data-action="number" data-value="6">6</button>
+            <button data-action="operator" data-value="+" class="operator">+</button>
+            
+            <button data-action="number" data-value="1">1</button>
+            <button data-action="number" data-value="2">2</button>
+            <button data-action="number" data-value="3">3</button>
+            
+            <button data-action="number" data-value="0">0</button>
+            <button data-action="number" data-value=".">.</button>
+            <button data-action="pro-mode" class="pro-mode">⚙️</button>
+            <button data-action="calculate" class="equals">=</button>
+        </div>
+    </div>
+
+    <script>
+        let displayValue = '0';
+        const display = document.getElementById('display');
+        const inClickSound = document.getElementById('inclick');
+        const outClickSound = document.getElementById('outclick');
+        const buttons = document.querySelector('.buttons');
+        const isMobile = 'ontouchstart' in window;
+        let lastAnswer = '0'; // Ajout de cette variable globale
+
+        // Gestionnaire d'événements unifié
+        if (isMobile) {
+            // Version mobile (tactile uniquement)
+            buttons.addEventListener('touchstart', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    event.preventDefault();
+                    if (navigator.vibrate) navigator.vibrate(40);
+                }
+            }, { passive: false });
+
+            buttons.addEventListener('touchend', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    event.preventDefault();
+                    handleButtonClick(button);
+                }
+            }, { passive: false });
+        } else {
+            // Version desktop (souris uniquement)
+            buttons.addEventListener('mousedown', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    inClickSound.currentTime = 0;
+                    inClickSound.play().catch(() => {});
+                }
+            });
+
+            buttons.addEventListener('mouseup', (event) => {
+                const button = event.target;
+                if (button.tagName === 'BUTTON') {
+                    outClickSound.currentTime = 0;
+                    outClickSound.play().catch(() => {});
+                    handleButtonClick(button);
+                }
+            });
+        }
+
+        function updateDisplay(value, isResult = false) {
+            const current = document.getElementById('current');
+            const history = document.getElementById('history');
+            
+            if (isResult) {
+                history.textContent = displayValue + ' =';
+                current.innerHTML = '';
+                const span = document.createElement('span');
+                span.textContent = value;
+                span.className = 'new-digit';
+                current.appendChild(span);
+            } else {
+                current.innerHTML = '';
+                value.split('').forEach((digit, index) => {
+                    const span = document.createElement('span');
+                    span.textContent = digit;
+                    if (current.textContent[index] !== digit) {
+                        span.className = 'new-digit';
+                    }
+                    current.appendChild(span);
+                });
+            }
+
+            // Faire défiler automatiquement vers la droite
+            requestAnimationFrame(() => {
+                current.scrollLeft = current.scrollWidth;
+            });
+        }
+
+        function appendNumber(num) {
+            // Si c'est π, afficher le symbole mais stocker la valeur
+            if (num === Math.PI.toString()) {
+                displayValue = displayValue === '0' ? 'π' : displayValue + 'π';
+            } else {
+                displayValue = displayValue === '0' && num !== '.' ? num : displayValue + num;
+            }
+            updateDisplay(displayValue);
+        }
+
+        function appendOperator(operator) {
+            displayValue += operator;
+            updateDisplay(displayValue);
+        }
+
+        function clearDisplay() {
+            displayValue = '0';
+            lastAnswer = '0';  // Reset aussi lastAnswer
+            // Reset l'historique
+            const history = document.getElementById('history');
+            history.textContent = '';
+            updateDisplay(displayValue);
+        }
+
+        function deleteLastChar() {
+            displayValue = displayValue.slice(0, -1) || '0';
+            updateDisplay(displayValue);
+        }
+
+        function preProcessExpression(expr) {
+            let processed = expr;
+            
+            // 1. Remplacer les constantes d'abord
+            processed = processed
+                .replace(/π/g, Math.PI)
+                .replace(/e/g, Math.E)
+                .replace(/ans/g, lastAnswer);
+
+            // 2. Gérer les fonctions trigonométriques
+            processed = processed
+                .replace(/sin\(([^)]+)\)/g, (match, p1) => `Math.sin(${p1} * Math.PI / 180)`)
+                .replace(/cos\(([^)]+)\)/g, (match, p1) => `Math.cos(${p1} * Math.PI / 180)`)
+                .replace(/tan\(([^)]+)\)/g, (match, p1) => `Math.tan(${p1} * Math.PI / 180)`);
+
+            // 3. Gérer les autres fonctions mathématiques
+            processed = processed
+                .replace(/log\(([^)]+)\)/g, 'Math.log10($1)')
+                .replace(/ln\(([^)]+)\)/g, 'Math.log($1)')
+                .replace(/√\(([^)]+)\)/g, 'Math.sqrt($1)');
+
+            // 4. Gérer les puissances
+            processed = processed
+                .replace(/(\d+\.?\d*|\))[\s\^](\d+\.?\d*)/g, 'Math.pow($1, $2)');
+
+            // 5. Ajouter des multiplications implicites
+            processed = processed
+                .replace(/(\d+|\))\(/g, '$1*(')
+                .replace(/\)(\d+)/g, ')*$1')
+                .replace(/(\d+)π/g, '$1*' + Math.PI)
+                .replace(/(\d+)e/g, '$1*' + Math.E);
+
+            return processed;
+        }
+
+        function calculate() {
+            try {
+                let expression = preProcessExpression(displayValue);
+                let originalExpression = displayValue;
+
+                // Compléter les parenthèses manquantes
+                let openCount = (expression.match(/\(/g) || []).length;
+                let closeCount = (expression.match(/\)/g) || []).length;
+                if (openCount > closeCount) {
+                    expression += ')'.repeat(openCount - closeCount);
+                }
+
+                // Évaluation sécurisée
+                let result = Function('"use strict";return (' + expression + ')')();
+                
+                // Formatage du résultat avec plus de précision
+                let formattedResult;
+                if (typeof result === 'number') {
+                    if (!isFinite(result) || isNaN(result)) {
+                        throw new Error('Résultat non valide');
+                    }
+                    
+                    // Garde plus de décimales pour plus de précision
+                    if (Math.abs(result) < 0.0001 || Math.abs(result) > 10000) {
+                        formattedResult = result.toExponential(4);
+                    } else {
+                        formattedResult = result.toFixed(6).replace(/\.?0+$/, '');
+                    }
+                } else {
+                    throw new Error('Résultat non valide');
+                }
+
+                // Mise à jour de l'affichage
+                lastAnswer = formattedResult;
+                displayValue = formattedResult;
+                
+                const history = document.getElementById('history');
+                const current = document.getElementById('current');
+                
+                history.textContent = originalExpression + ' =';
+                current.innerHTML = '';
+                const span = document.createElement('span');
+                span.textContent = formattedResult;
+                span.className = 'new-digit';
+                current.appendChild(span);
+
+            } catch (error) {
+                console.error('Erreur de calcul:', error);
+                displayValue = 'Error';
+                updateDisplay(displayValue);
+                setTimeout(clearDisplay, 1500);
+            }
+        }
+
+        // Remplacer l'ancien gestionnaire de clavier par celui-ci
+        document.addEventListener('keydown', function(event) {
+            // Empêcher le comportement par défaut de Ctrl+W et autres raccourcis
+            if (event.ctrlKey) {
+                return; // Ignorer complètement les touches avec Ctrl
+            }
+
+            // Empêcher les actions par défaut uniquement pour les touches de calculatrice
+            if ('0123456789.+-*/=Enter'.includes(event.key)) {
+                event.preventDefault();
+            }
+
+            // Jouer le son d'appui sur les touches (seulement sur desktop)
+            if (!isMobile) {
+                inClickSound.currentTime = 0;
+                inClickSound.play().catch(() => {});
+            }
+            
+            // Gestion des touches numériques (incluant le pavé numérique)
+            if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
+                let num = event.key;
+                // Conversion des codes du pavé numérique
+                if (event.keyCode >= 96 && event.keyCode <= 105) {
+                    num = (event.keyCode - 96).toString();
+                }
+                appendNumber(num);
+            }
+            
+            // Opérateurs et touches spéciales
+            switch (event.key) {
+                case '+':
+                    appendOperator('+');
+                    break;
+                case '-':
+                    appendOperator('-');
+                    break;
+                case '*':
+                case 'x':
+                    appendOperator('*');
+                    break;
+                case '/':
+                    appendOperator('/');
+                    break;
+                case 'Enter':
+                case '=':
+                    calculate();
+                    break;
+                case 'Backspace':
+                    deleteLastChar();
+                    break;
+                case 'Escape':
+                case 'Delete':
+                    clearDisplay();
+                    break;
+            }
+
+            // Gestion du pavé numérique pour les opérateurs
+            switch (event.keyCode) {
+                case 107: // Pavé numérique +
+                    appendOperator('+');
+                    break;
+                case 109: // Pavé numérique -
+                    appendOperator('-');
+                    break;
+                case 106: // Pavé numérique *
+                    appendOperator('*');
+                    break;
+                case 111: // Pavé numérique /
+                    appendOperator('/');
+                    break;
+                case 13: // Pavé numérique Enter
+                    calculate();
+                    break;
+            }
+
+            // Jouer le son de relâchement sur desktop
+            if (!isMobile) {
+                outClickSound.currentTime = 0;
+                outClickSound.play().catch(() => {});
+            }
+        });
+
+        // Ajouter ces fonctions d'aide pour la simulation visuelle
+        function simulateButtonPress(valueOrAction) {
+            let button;
+            if (['clear', 'delete', 'calculate'].includes(valueOrAction)) {
+                button = document.querySelector(`button[data-action="${valueOrAction}"]`);
+            } else {
+                button = document.querySelector(`button[data-value="${valueOrAction}"]`);
+            }
+            
+            if (button) {
+                button.classList.add('active');
+                button.style.transform = 'translateY(6px)';
+                button.style.boxShadow = '0 0 0 #1a291a, 0 0 0 rgba(0, 0, 0, 0.4), inset 0 -1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2)';
+            }
+        }
+
+        function simulateButtonRelease(valueOrAction) {
+            let button;
+            if (['clear', 'delete', 'calculate'].includes(valueOrAction)) {
+                button = document.querySelector(`button[data-action="${valueOrAction}"]`);
+            } else {
+                button = document.querySelector(`button[data-value="${valueOrAction}"]`);
+            }
+            
+            if (button) {
+                button.classList.remove('active');
+                button.style.transform = '';
+                button.style.boxShadow = '';
+            }
+        }
+
+        // Modifier le gestionnaire keydown
+        document.addEventListener('keydown', function(event) {
+            if (event.repeat) return; // Éviter la répétition des touches maintenues
+            
+            // Empêcher les actions par défaut du navigateur
+            if (event.key === 'Enter' || event.key === '=' || event.key === 'Delete' || event.key === 'Backspace') {
+                event.preventDefault();
+            }
+
+            let buttonValue = null;
+
+            // Ajouter la gestion de la touche 'c'
+            if (event.key.toLowerCase() === 'c') {
+                const clearButton = document.querySelector('button[data-action="clear"]');
+                if (clearButton) {
+                    clearButton.style.transform = 'translateY(6px)';
+                    clearButton.style.boxShadow = '0 0 0 #1a291a, 0 0 0 rgba(0, 0, 0, 0.4), inset 0 -1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2)';
+                    clearButton.classList.add('pressed'); // Ajouter une classe pour suivre l'état
+                    clearDisplay();
+                    if (!isMobile) {
+                        inClickSound.currentTime = 0;
+                        inClickSound.play().catch(() => {});
+                    }
+                }
+                return;
+            }
+
+            // Gestion des touches numériques
+            if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
+                buttonValue = event.keyCode >= 96 && event.keyCode <= 105 ? 
+                             (event.keyCode - 96).toString() : 
+                             event.key;
+                simulateButtonPress(buttonValue);
+                appendNumber(buttonValue);
+            }
+
+            // Gestion des opérateurs
+            switch (event.key) {
+                case '+': case '-': case '*': case '/': case '=':
+                    buttonValue = event.key;
+                    simulateButtonPress(buttonValue);
+                    if (event.key === '=') {
+                        calculate();
+                    } else {
+                        appendOperator(buttonValue);
+                    }
+                    break;
+            }
+
+            // Gestion du pavé numérique pour les opérateurs
+            switch (event.keyCode) {
+                case 107: simulateButtonPress('+'); appendOperator('+'); break;
+                case 109: simulateButtonPress('-'); appendOperator('-'); break;
+                case 106: simulateButtonPress('*'); appendOperator('*'); break;
+                case 111: simulateButtonPress('/'); appendOperator('/'); break;
+                case 13: // Pavé numérique Enter ou touche Enter normale
+                case 187: // Touche = du clavier principal
+                    simulateButtonPress('calculate');
+                    calculate();
+                    break;
+            }
+
+            // Gestion des touches spéciales de suppression
+            switch (event.key) {
+                case 'Delete':
+                case 'Backspace':
+                    simulateButtonPress('delete');
+                    deleteLastChar();
+                    if (!isMobile) {
+                        inClickSound.currentTime = 0;
+                        inClickSound.play().catch(() => {});
+                    }
+                    return;
+                case 'Escape':
+                    simulateButtonPress('clear');
+                    clearDisplay();
+                    if (!isMobile) {
+                        inClickSound.currentTime = 0;
+                        inClickSound.play().catch(() => {});
+                    }
+                    return;
+            }
+
+            // Jouer les sons sur desktop
+            if (!isMobile) {
+                inClickSound.currentTime = 0;
+                inClickSound.play().catch(() => {});
+                outClickSound.currentTime = 0;
+                outClickSound.play().catch(() => {});
+            }
+        });
+
+        // Ajouter le gestionnaire keyup
+        document.addEventListener('keyup', function(event) {
+            let buttonValue = null;
+
+            // Ajouter la gestion du relâchement de la touche 'c'
+            if (event.key.toLowerCase() === 'c') {
+                const clearButton = document.querySelector('button[data-action="clear"]');
+                if (clearButton) {
+                    clearButton.style.transform = '';
+                    clearButton.style.boxShadow = '';
+                    clearButton.classList.remove('pressed'); // Retirer la classe
+                    if (!isMobile) {
+                        outClickSound.currentTime = 0;
+                        outClickSound.play().catch(() => {});
+                    }
+                }
+                return;
+            }
+
+            // Déterminer quelle touche a été relâchée
+            if (/^[0-9.]$/.test(event.key) || (event.keyCode >= 96 && event.keyCode <= 105)) {
+                buttonValue = event.keyCode >= 96 && event.keyCode <= 105 ? 
+                             (event.keyCode - 96).toString() : 
+                             event.key;
+            }
+
+            // Opérateurs
+            switch (event.key) {
+                case '+': case '-': case '*': case '/':
+                    buttonValue = event.key;
+                    break;
+            }
+
+            // Pavé numérique
+            switch (event.keyCode) {
+                case 107: buttonValue = '+'; break;
+                case 109: buttonValue = '-'; break;
+                case 106: buttonValue = '*'; break;
+                case 111: buttonValue = '/'; break;
+            }
+
+            if (buttonValue) {
+                simulateButtonRelease(buttonValue);
+            }
+
+            // Ajouter la gestion du relâchement des touches spéciales
+            switch (event.key) {
+                case 'Escape':
+                    simulateButtonRelease('clear');
+                    break;
+                case 'Backspace':
+                    simulateButtonRelease('delete');
+                    break;
+                case 'Enter':
+                case '=':
+                    simulateButtonRelease('calculate');
+                    break;
+                case 'Delete':
+                case 'Backspace':
+                    simulateButtonRelease('delete');
+                    if (!isMobile) {
+                        outClickSound.currentTime = 0;
+                        outClickSound.play().catch(() => {});
+                    }
+                    return;
+                case 'Escape':
+                    simulateButtonRelease('clear');
+                    if (!isMobile) {
+                        outClickSound.currentTime = 0;
+                        outClickSound.play().catch(() => {});
+                    }
+                    return;
+            }
+        });
+
+        function handleButtonClick(button) {
+            const action = button.dataset.action;
+            const value = button.dataset.value;
+
+            switch(action) {
+                case 'pro-mode':
+                    toggleProMode();
+                    break;
+                case 'number':
+                    appendNumber(value);
+                    break;
+                case 'operator':
+                    appendOperator(value);
+                    break;
+                case 'calculate':
+                    calculate();
+                    break;
+                case 'clear':
+                    clearDisplay();  // Appelle directement clearDisplay
+                    break;
+                case 'delete':
+                    // Permet de supprimer même après un calcul
+                    if (displayValue === lastAnswer) {
+                        const history = document.getElementById('history');
+                        history.textContent = '';  // Efface l'historique
+                    }
+                    deleteLastChar();
+                    break;
+                case 'function':
+                    if (['sin', 'cos', 'tan', 'log', 'ln'].includes(value)) {
+                        // Pour les fonctions qui nécessitent des parenthèses
+                        displayValue = displayValue === '0' ? 
+                            value + '(' : 
+                            displayValue + value + '(';
+                    } else if (value === 'x²') {
+                        displayValue = displayValue === '0' ? 
+                            '0^2' : 
+                            displayValue + '^2';
+                    } else if (value === '√') {
+                        displayValue = displayValue === '0' ? 
+                            '√(' : 
+                            displayValue + '√(';
+                    }
+                    updateDisplay(displayValue);
+                    break;
+                case 'constant':
+                    if (value === 'π') {
+                        displayValue = displayValue === '0' ? 
+                            'π' : 
+                            displayValue + 'π';
+                    } else if (value === 'e') {
+                        displayValue = displayValue === '0' ? 
+                            'e' : 
+                            displayValue + 'e';
+                    }
+                    updateDisplay(displayValue);
+                    break;
+                case 'parenthesis':
+                    appendNumber(value);
+                    break;
+                case 'memory':
+                    if (value === 'ans') {
+                        appendNumber(lastAnswer);
+                    }
+                    break;
+            }
+        }
+
+        // Ajout de la gestion du mode Pro
+        let isProMode = false;
+        const calculator = document.querySelector('.calculator');
+        const buttonsContainer = document.querySelector('.buttons');
+
+        function toggleProMode() {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            buttonsContainer.style.pointerEvents = 'none';
+            
+            // Fade out simple
+            buttonsContainer.classList.add('fade-out');
+            
+            setTimeout(() => {
+                // Changement de mode
+                isProMode = !isProMode;
+                calculator.classList.toggle('pro-active');
+                
+                // Mise à jour du contenu
+                if (isProMode) {
+                    updateProButtons();
+                } else {
+                    updateBasicButtons();
+                }
+                
+                // Fade in simple
+                requestAnimationFrame(() => {
+                    buttonsContainer.classList.remove('fade-out');
+                    buttonsContainer.classList.add('fade-in');
+                    
+                    setTimeout(() => {
+                        buttonsContainer.style.pointerEvents = '';
+                        buttonsContainer.classList.remove('fade-in');
+                        isAnimating = false;
+                    }, 200);
+                });
+            }, 200);
+        }
+
+        let isAnimating = false; // Ajouter cette variable au début du script
+
+        function getProButtonsHTML() {
+            return `<!-- Pro buttons HTML -->`;
+        }
+
+        function getBasicButtonsHTML() {
+            return `<!-- Basic buttons HTML -->`;
+        }
+
+        function updateBasicButtons() {
+            buttonsContainer.classList.remove('pro-mode');
+            buttonsContainer.innerHTML = `
+                <button data-action="clear">C</button>
+                <button data-action="operator" data-value="/">/</button>
+                <button data-action="operator" data-value="*">×</button>
+                <button data-action="delete">←</button>
+                
+                <button data-action="number" data-value="7">7</button>
+                <button data-action="number" data-value="8">8</button>
+                <button data-action="number" data-value="9">9</button>
+                <button data-action="operator" data-value="-" class="operator">-</button>
+                
+                <button data-action="number" data-value="4">4</button>
+                <button data-action="number" data-value="5">5</button>
+                <button data-action="number" data-value="6">6</button>
+                <button data-action="operator" data-value="+" class="operator">+</button>
+                
+                <button data-action="number" data-value="1">1</button>
+                <button data-action="number" data-value="2">2</button>
+                <button data-action="number" data-value="3">3</button>
+                
+                <button data-action="number" data-value="0">0</button>
+                <button data-action="number" data-value=".">.</button>
+                <button data-action="pro-mode" class="pro-mode">⚙️</button>
+                <button data-action="calculate" class="equals">=</button>
+            `;
+        }
+
+        function updateProButtons() {
+            buttonsContainer.classList.add('pro-mode');
+            buttonsContainer.innerHTML = `
+                <button data-action="clear">C</button>
+                <button data-action="memory" data-value="ans">ans</button>
+                <button data-action="parenthesis" data-value="(">(</button>
+                <button data-action="parenthesis" data-value=")">)</button>
+                <button data-action="delete">←</button>
+
+                <button data-action="function" data-value="sin" class="function">sin</button>
+                <button data-action="number" data-value="7">7</button>
+                <button data-action="number" data-value="8">8</button>
+                <button data-action="number" data-value="9">9</button>
+                <button data-action="operator" data-value="/" class="operator">/</button>
+
+                <button data-action="function" data-value="cos" class="function">cos</button>
+                <button data-action="number" data-value="4">4</button>
+                <button data-action="number" data-value="5">5</button>
+                <button data-action="number" data-value="6">6</button>
+                <button data-action="operator" data-value="*" class="operator">×</button>
+
+                <button data-action="function" data-value="tan" class="function">tan</button>
+                <button data-action="number" data-value="1">1</button>
+                <button data-action="number" data-value="2">2</button>
+                <button data-action="number" data-value="3">3</button>
+                <button data-action="operator" data-value="-" class="operator">-</button>
+
+                <button data-action="function" data-value="√" class="function">√</button>
+                <button data-action="constant" data-value="π" class="constant">π</button>
+                <button data-action="number" data-value="0">0</button>
+                <button data-action="number" data-value=".">.</button>
+                <button data-action="operator" data-value="+" class="operator">+</button>
+
+                <button data-action="function" data-value="x²" class="function">x²</button>
+                <button data-action="function" data-value="ln" class="function">ln</button>
+                <button data-action="function" data-value="log" class="function">log</button>
+                <button data-action="pro-mode" class="pro-mode">←</button>
+                <button data-action="calculate" class="equals">=</button>
+            `;
+        }
+    </script>
+</body>
+</html>
